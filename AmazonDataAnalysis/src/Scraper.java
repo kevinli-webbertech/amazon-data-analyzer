@@ -128,14 +128,23 @@ public class Scraper {
 		 * <li id="result_0" data-asin="B01IFVL7VG" class="s-result-item celwidget">
 		 * */
 		Elements middleColumn = document.select("li[^data-]"); 
+		
+		//the following is to output for testing
 		for (int i=0;i<middleColumn.size();i++) {
 			Element item = middleColumn.get(i);
+			System.out.println(item.text() +" " + item.attr("data-asin"));break;
+		}
+			//TODO need to parse each li tag and see if it is a "sponsor" item, if not add it to List.
+				
+			/*
 			//print out only sponsored item, this is not working yet
 			if (item.select("h:contains(Sponsored)")!=null && !item.select("h:contains(Sponsored)").isEmpty()) {
 				System.out.println(item.attr("id")+ " " + item.attr("data-asin"));
 			}
-			//TODO need to parse each li tag and see if it is a "sponsor" item, if not add it to List.
-		}
+			*/
+			
+			
+		
 		return products;
 	}
 	
@@ -154,11 +163,15 @@ public class Scraper {
 	    List<ProductItem> products = s.getItemsPerPage(document);
         
 		// this works div.xx, and div#xx syntax.
-		// Element middleColumn = document.select("div#resultsCol").first();
-		//;
+	
+	   // Element middleColumn = document.select("div#resultsCol").first();
 		/*
-		 * for (Element li : middleColumn.getAllElements()) {
-		 * System.out.println(li.toString()); }
-		 */
+	    Element middleColumn = document.select("ul#s-results-list-atf").first();
+		  for (Element li : middleColumn.getAllElements()) {
+		  System.out.println(li.toString()); }
+		*/
+	    
+	    List<ProductItem> list = s.getItemsPerPage(document);
+	 
 	}
 }

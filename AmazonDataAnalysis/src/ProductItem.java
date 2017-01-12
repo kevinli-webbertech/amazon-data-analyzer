@@ -1,8 +1,8 @@
 public class ProductItem {
-	String asin;
-	float rating;
-	int reviewNumber;
-	int bsr;
+	String asin; // UPC number, which is uniquely identify a product
+	float rating; // how many stars
+	int reviewNumber; // how many people rate the star
+	int bsr; // best seller rank
 
 	public String getAsin() {
 		return asin;
