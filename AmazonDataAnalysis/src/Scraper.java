@@ -128,12 +128,11 @@ public class Scraper {
 		 * <li id="result_0" data-asin="B01IFVL7VG" class="s-result-item celwidget">
 		 * */
 		Elements middleColumn = document.select("li[^data-]"); 
-		
 		//the following is to output for testing
-		for (int i=0;i<middleColumn.size();i++) {
-			Element item = middleColumn.get(i);
-			System.out.println(item.text() +" " + item.attr("data-asin"));break;
-		}
+//		for (int i=0;i<middleColumn.size();i++) {
+//			Element item = middleColumn.get(i);
+//			System.out.println(item.attr("data-asin"));
+//		}
 			//TODO need to parse each li tag and see if it is a "sponsor" item, if not add it to List.
 				
 			/*
@@ -142,17 +141,29 @@ public class Scraper {
 				System.out.println(item.attr("id")+ " " + item.attr("data-asin"));
 			}
 			*/
-			
-			
+		for (int i=0;i<middleColumn.size();i++) {
+			Element item = middleColumn.get(i);
+			if(isSponsoredProduct(item)) System.out.println("Sponsored" + " " + item.attr("data-asin"));
+			else {
+//				products.add(item.attr("data-asin"));
+				System.out.println(item.attr("data-asin"));
+			}
+		}
+		
 		
 		return products;
 	}
 	
 	// ele is <li> tag for instance
 	private boolean isSponsoredProduct(Element ele) {
-		
+		String str = null;
+		if(ele.select("h5") != null && ele.select("h5").first() != null) {
+			str = ele.select("h5").first().text();
+			if(str.equals("Sponsored")) return true;
+		}
 		return false;
 	}
+	
 	
 	public static void main(String[] args) throws Exception {
 		Scraper s = Scraper.getInstance();
@@ -171,7 +182,7 @@ public class Scraper {
 		  System.out.println(li.toString()); }
 		*/
 	    
-	    List<ProductItem> list = s.getItemsPerPage(document);
+//	    List<ProductItem> list = s.getItemsPerPage(document);
 	 
 	}
 }
