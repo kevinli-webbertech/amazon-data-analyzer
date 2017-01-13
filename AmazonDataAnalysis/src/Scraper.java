@@ -141,15 +141,27 @@ public class Scraper {
 			if (item.select("h:contains(Sponsored)")!=null && !item.select("h:contains(Sponsored)").isEmpty()) {
 				System.out.println(item.attr("id")+ " " + item.attr("data-asin"));
 			}
-		*/
+			*/
+		for (int i=0;i<middleColumn.size();i++) {
+			Element item = middleColumn.get(i);
+			if(isSponsoredProduct(item)) System.out.println("Sponsored" + " " + item.attr("data-asin"));
+			else {
+				System.out.println(item.attr("data-asin"));
+			}
+		}
 		return products;
 	}
 	
 	// ele is <li> tag for instance
 	private boolean isSponsoredProduct(Element ele) {
-		
+		String str = null;
+		if(ele.select("h5") != null && ele.select("h5").first() != null) {
+			str = ele.select("h5").first().text();
+			if(str.equals("Sponsored")) return true;
+		}
 		return false;
 	}
+	
 	
 	public static void main(String[] args) throws Exception {
 		Scraper s = Scraper.getInstance();
@@ -168,7 +180,7 @@ public class Scraper {
 		  System.out.println(li.toString()); }
 		*/
 	    
-	    List<ProductItem> list = s.getItemsPerPage(document);
+//	    List<ProductItem> list = s.getItemsPerPage(document);
 	 
 	}
 }
