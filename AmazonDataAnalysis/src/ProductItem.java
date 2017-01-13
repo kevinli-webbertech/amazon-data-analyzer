@@ -1,9 +1,29 @@
 public class ProductItem {
-	String asin; // UPC number, which is uniquely identify a product
-	float rating; // how many stars
-	int reviewNumber; // how many people rate the star
-	int bsr; // best seller rank
+	
+	String productURL;   	  // URL to access each product page
+	String imageURLs;
+	String asin;  	  // ASIN/UPC number, which is uniquely identify a product
+	float rating; 	  // How many stars
+	int reviewNumber; // How many people rate the star
+	int bsr; 		  // Best seller rank
 
+	
+    public String getImageURLs() {
+		return imageURLs;
+	}
+
+	public void setImageURLs(String imageURLs) {
+		this.imageURLs = imageURLs;
+	}
+
+	public void setProductURL(String url) {
+    	this.productURL = url;
+    }
+	
+    public String getProductURL() {
+    	return this.productURL;
+    }
+    
 	public String getAsin() {
 		return asin;
 	}
