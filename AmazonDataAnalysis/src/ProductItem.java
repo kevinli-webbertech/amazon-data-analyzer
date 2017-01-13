@@ -1,9 +1,20 @@
 public class ProductItem {
-	String asin; // UPC number, which is uniquely identify a product
-	float rating; // how many stars
-	int reviewNumber; // how many people rate the star
-	int bsr; // best seller rank
+	
+	String url;   	  // URL to access each product page
+	String asin;  	  // UPC number, which is uniquely identify a product
+	float rating; 	  // How many stars
+	int reviewNumber; // How many people rate the star
+	int bsr; 		  // Best seller rank
 
+	
+	public void setURL(String url) {
+		this.url = url;
+	}
+	
+	public String getURL() {
+		return this.url;
+	}
+	
 	public String getAsin() {
 		return asin;
 	}

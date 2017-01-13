@@ -1,34 +1,34 @@
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
-import org.jsoup.helper.StringUtil;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.nodes.Node;
 import org.jsoup.select.Elements;
-
 import java.util.ArrayList;
 import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.io.*;
-
 
 /**
  * This is an amazon scraper, the problem is that, we are going to do the pagination of 
  * amazon searched items, and pull each page to collect the data we want. 
  * 
- * Problem: The total number of the searched item is always changing, so before we 
+ * Problem: 
+ * 
+ * Due to the network response time and request scraping of a large number of pages,
+ * it results in a huge number of computation. 
+ * The total number of the searched item is always changing, so before we 
  * iterate through all the pages, the total number of pages might change.
  * 
  * Solution: distributing the computing by using multiple machines to do the data collection
  * and merge the result back from ASCII file.
  * 
  * Jsoup lib: 
- *    For example it looks like the following, the selector pattern refers to: 
-		 * https://jsoup.org/cookbook/extracting-data/selector-syntax
-		 * 
-		 * 
- *  @author xiaofeng li  xlics05@gmail.com
+ * 
+ * the selector pattern refers to: 
+ * https://jsoup.org/cookbook/extracting-data/selector-syntax
+ * 
+ * For example, div.xx and div#xx syntax.
+ * 
+ *  @author xiaofeng li  xlics05@gmail.com 
  * */
 
 public class Scraper {
@@ -43,6 +43,7 @@ public class Scraper {
 	 * Set timeout value so the IOException will be casted.
 	 * 
 	 * TODO need the log4j to hook up so that the exception handling can log stuff.
+	 * rename this method, as setDocument right now is a very bad name
 	 * */
 	public void setDocument(String url) {
 		try {
@@ -61,7 +62,6 @@ public class Scraper {
 	public static Scraper getInstance() {
 		return scraper;
 	} 
-
 	
 	/* TODO what is the better name to replace the Summary?
 	  It is the string on top of each product search page such as:
@@ -69,6 +69,7 @@ public class Scraper {
 	*/
 	private String getSummaryText(Document document) {
 		Element totalCount = document.select("div.s-first-column").first();
+		System.out.println("summary text is:" + totalCount.text());
 		return totalCount.text();	
 	}
 	
@@ -82,8 +83,8 @@ public class Scraper {
 	 * 2/ The div that contains the info was found by browser's inspector, and this is subject to change.
 	 * Make this a configurable constant.
 	 * */
-	public Integer getTotalCountOfItems(Document document) {
-		return Integer.valueOf(StringUtils.substringBetween(getSummaryText(document), "of", "results").trim().replaceAll(",+", ""));
+	public Integer getTotalCountOfItems(String summaryText) {
+		return Integer.valueOf(StringUtils.substringBetween(summaryText, "of", "results").trim().replaceAll(",+", ""));
 	}
 
 	/**
@@ -96,8 +97,8 @@ public class Scraper {
 	}
 	
 	//For example 11/2 should return 6 pages
-	public double getTotalPages() {
-		return Math.ceil(getTotalCountOfItems(getDocument())/getItemsCountsPerPage(getDocument()));
+	public double getTotalPages(int totalPage, int itemsPerPage) {
+		return Math.ceil(totalPage/itemsPerPage);
 	}
 	
 	/** 
@@ -129,11 +130,10 @@ public class Scraper {
 		 * */
 		Elements middleColumn = document.select("li[^data-]"); 
 		
-		//the following is to output that we get 20 items per page including 4 sponsored links.
-		for (int i=0;i<middleColumn.size();i++) {
-			Element item = middleColumn.get(i);
-			System.out.println(item.attr("data-asin"));
-		}
+		//the following is a util function for testing
+		//it output 20 items per page including 4 sponsored links.
+		printElements(middleColumn);
+		
 		
 		//TODO need to parse each li tag and see if it is a "sponsor" item, if not add it to List.
 		/*
@@ -145,30 +145,81 @@ public class Scraper {
 		return products;
 	}
 	
+	public void printElements(Elements elements) {
+		//for (int i=0;i<elements.size();i++) {
+		for (int i=0;i<1;i++) {
+			Element item = elements.get(i);
+			getURL(item);
+			System.out.println(item.attr("data-asin"));
+		}
+	}
+	
+	/**
+	 * @param Element of <li></li> tag
+	 * @return a string of url
+	 * */
+	public String getURL(Element ele) {
+		/*
+		 * I've this HTML code:
+
+ 		<td class="topic starter"><a href="http://www.test.com">Title</a></td>
+		I want to extract "Title" and the URL, so I did this:
+
+ 		Elements titleUrl = doc.getElementsByAttributeValue("class", "topic starter");
+ 
+ 		String title = titleUrl.text();
+		And this works for the title, for the URL I tried the following:
+		 * 
+		 * 
+		 * element link = doc.select("td.topic.starter > a");
+			String url = link.attr("href");
+		*/
+		
+		Element link = ele.select("a").first();
+		// this link 's ChildNode has all the images I need, could be sperated with a comma and store in a String type.
+		// need to make another field in ProductItem.
+		//URL is also accessible from the href, the problem is that we have to decode it.
+		/*
+		 * For example, what I got is: 
+		 * 
+		 * https%3A%2F%2Fwww.amazon.com%2FGobago-Foldable-Backpack-Lightweight-Packable%2Fdp%2FB01HO4BAW6%2Fref%3Dsr_1_1%2F154-4658085-6387846%3Fie%3DUTF8%26qid%3D1484287411%26sr%3D8-1-spons%26keywords%3Ddaypack%26psc%3D1&amp;qualifier=1484287411&amp;id=3003244927772836&amp;widgetName=sp_atf
+		 * 
+		 * */
+		String url = null;
+		try {
+			url = java.net.URLDecoder.decode(link.attr("abs:href"), "UTF-8");
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block, log this to log file
+			e.printStackTrace();
+		}
+		String title = link.text();
+		System.out.println("URL is: " + url);
+		System.out.println("Title is:" + title);
+		return "";
+	}
+	
 	// ele is <li> tag for instance
 	private boolean isSponsoredProduct(Element ele) {
-		
 		return false;
 	}
+	
+	
+	/*TODO start service, implement this to make sure that it only 
+	 * starts once and check the document is set. 
+	*/
+	public void startService() {}
+	
+    /*TODO move all the methods to the util class, 
+     * such a large file is hard to read.
+	*/
+	
 	
 	public static void main(String[] args) throws Exception {
 		Scraper s = Scraper.getInstance();
         s.setDocument(Scraper.URL);
         Document document = s.getDocument();
-		System.out.println(s.getTotalCountOfItems(document));
+		System.out.println(s.getTotalCountOfItems(s.getSummaryText(document)));
 		System.out.println(s.getItemsCountsPerPage(document));
 	    List<ProductItem> products = s.getItemsPerPage(document);
-        
-		// this works div.xx, and div#xx syntax.
-	
-	   // Element middleColumn = document.select("div#resultsCol").first();
-		/*
-	    Element middleColumn = document.select("ul#s-results-list-atf").first();
-		  for (Element li : middleColumn.getAllElements()) {
-		  System.out.println(li.toString()); }
-		*/
-	    
-	    List<ProductItem> list = s.getItemsPerPage(document);
-	 
-	}
+    }
 }
