@@ -128,14 +128,15 @@ public class Scraper {
 		 * <li id="result_0" data-asin="B01IFVL7VG" class="s-result-item celwidget">
 		 * */
 		Elements middleColumn = document.select("li[^data-]"); 
-		//the following is to output for testing
-//		for (int i=0;i<middleColumn.size();i++) {
-//			Element item = middleColumn.get(i);
-//			System.out.println(item.attr("data-asin"));
-//		}
-			//TODO need to parse each li tag and see if it is a "sponsor" item, if not add it to List.
-				
-			/*
+		
+		//the following is to output that we get 20 items per page including 4 sponsored links.
+		for (int i=0;i<middleColumn.size();i++) {
+			Element item = middleColumn.get(i);
+			System.out.println(item.attr("data-asin"));
+		}
+		
+		//TODO need to parse each li tag and see if it is a "sponsor" item, if not add it to List.
+		/*
 			//print out only sponsored item, this is not working yet
 			if (item.select("h:contains(Sponsored)")!=null && !item.select("h:contains(Sponsored)").isEmpty()) {
 				System.out.println(item.attr("id")+ " " + item.attr("data-asin"));
@@ -145,12 +146,9 @@ public class Scraper {
 			Element item = middleColumn.get(i);
 			if(isSponsoredProduct(item)) System.out.println("Sponsored" + " " + item.attr("data-asin"));
 			else {
-//				products.add(item.attr("data-asin"));
 				System.out.println(item.attr("data-asin"));
 			}
 		}
-		
-		
 		return products;
 	}
 	
