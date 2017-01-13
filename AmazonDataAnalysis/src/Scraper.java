@@ -185,6 +185,7 @@ public class Scraper {
 		 * https%3A%2F%2Fwww.amazon.com%2FGobago-Foldable-Backpack-Lightweight-Packable%2Fdp%2FB01HO4BAW6%2Fref%3Dsr_1_1%2F154-4658085-6387846%3Fie%3DUTF8%26qid%3D1484287411%26sr%3D8-1-spons%26keywords%3Ddaypack%26psc%3D1&amp;qualifier=1484287411&amp;id=3003244927772836&amp;widgetName=sp_atf
 		 * 
 		 * */
+		link.childNode(0).toString();
 		String url = null;
 		try {
 			url = java.net.URLDecoder.decode(link.attr("abs:href"), "UTF-8");
@@ -203,7 +204,7 @@ public class Scraper {
 		return false;
 	}
 	
-	
+
 	/*TODO start service, implement this to make sure that it only 
 	 * starts once and check the document is set. 
 	*/
@@ -212,7 +213,6 @@ public class Scraper {
     /*TODO move all the methods to the util class, 
      * such a large file is hard to read.
 	*/
-	
 	
 	public static void main(String[] args) throws Exception {
 		Scraper s = Scraper.getInstance();
