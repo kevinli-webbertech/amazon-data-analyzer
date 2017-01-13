@@ -36,7 +36,6 @@ public class Scraper {
 	private static Scraper scraper = new Scraper();
 	final static String URL = "https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=daypack";
 
-	
 	/**
 	 * This is compulsory to run otherwise the Document object will be null.
 	 * 
@@ -134,7 +133,6 @@ public class Scraper {
 		//it output 20 items per page including 4 sponsored links.
 		printElements(middleColumn);
 		
-		
 		//TODO need to parse each li tag and see if it is a "sponsor" item, if not add it to List.
 		/*
 			//print out only sponsored item, this is not working yet
@@ -149,6 +147,12 @@ public class Scraper {
 		//for (int i=0;i<elements.size();i++) {
 		for (int i=0;i<1;i++) {
 			Element item = elements.get(i);
+			if(isSponsoredProduct(item)) {
+				System.out.println("Sponsored" + " " + item.attr("data-asin"));
+			} else {
+				System.out.println(item.attr("data-asin"));
+			}
+				
 			getURL(item);
 			System.out.println(item.attr("data-asin"));
 		}
@@ -200,11 +204,18 @@ public class Scraper {
 	}
 	
 	// ele is <li> tag for instance
+	/*TODO: refactor this*/
 	private boolean isSponsoredProduct(Element ele) {
+		String str = null;
+		if(ele.select("h5") != null && ele.select("h5").first() != null) {
+			str = ele.select("h5").first().text();
+			if(str.equals("Sponsored")) {
+				return true;
+			}
+		}
 		return false;
 	}
 	
-
 	/*TODO start service, implement this to make sure that it only 
 	 * starts once and check the document is set. 
 	*/
@@ -213,7 +224,6 @@ public class Scraper {
     /*TODO move all the methods to the util class, 
      * such a large file is hard to read.
 	*/
-	
 	public static void main(String[] args) throws Exception {
 		Scraper s = Scraper.getInstance();
         s.setDocument(Scraper.URL);
