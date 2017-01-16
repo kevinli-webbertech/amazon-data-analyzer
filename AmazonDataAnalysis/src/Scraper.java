@@ -6,6 +6,8 @@ import org.jsoup.select.Elements;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 /**
  * This is an amazon scraper, the problem is that, we are going to do the pagination of 
@@ -35,7 +37,8 @@ public class Scraper {
 	private Document document;
 	private static Scraper scraper = new Scraper();
 	final static String URL = "https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=daypack";
-
+	public static Logger logger = Logger.getLogger(Scraper.class);
+	
 	/**
 	 * This is compulsory to run otherwise the Document object will be null.
 	 * 
@@ -53,6 +56,7 @@ public class Scraper {
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			logger.info("IOException");
 		}
 	}
 
@@ -131,7 +135,7 @@ public class Scraper {
 		
 		//the following is a util function for testing
 		//it output 20 items per page including 4 sponsored links.
-		printElements(middleColumn);
+//		printElements(middleColumn);
 		
 		//TODO need to parse each li tag and see if it is a "sponsor" item, if not add it to List.
 		/*
@@ -140,21 +144,46 @@ public class Scraper {
 				System.out.println(item.attr("id")+ " " + item.attr("data-asin"));
 			}
 		*/
+		for(int i=0; i<middleColumn.size(); i++){
+			Element ele = middleColumn.get(i);
+			ProductItem product = new ProductItem();
+			if(isSponsoredProduct(ele)) {
+				System.out.println("%%%%%%isSponsoredProduct");
+				continue;
+			}
+			else if(isShopByCategory(ele)) {
+				System.out.println("isShopByCategory");
+				continue;
+			}
+			else{
+				product.setProductURL(ele);
+				product.setAsin(ele);
+				System.out.println(product.getProductURL());
+				System.out.println(product.getAsin());
+				product.setDocument();
+				product.setRating();
+				product.setBsr();
+				product.setReviewNumber();
+				product.setImageURLs();
+				System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" + "\n");
+			}
+		}
+		
 		return products;
 	}
 	
 	public void printElements(Elements elements) {
 		//for (int i=0;i<elements.size();i++) {
-		for (int i=0;i<1;i++) {
+		for (int i=0;i<elements.size();i++) {
 			Element item = elements.get(i);
-			if(isSponsoredProduct(item)) {
-				System.out.println("Sponsored" + " " + item.attr("data-asin"));
-			} else {
-				System.out.println(item.attr("data-asin"));
-			}
+//			if(isSponsoredProduct(item)) {
+//				System.out.println("Sponsored" + " " + item.attr("data-asin"));
+//			} else {
+//				System.out.println(item.attr("data-asin"));
+//			}
 				
 			getURL(item);
-			System.out.println(item.attr("data-asin"));
+//			System.out.println(item.attr("data-asin"));
 		}
 	}
 	
@@ -200,7 +229,7 @@ public class Scraper {
 		String title = link.text();
 		System.out.println("URL is: " + url);
 		System.out.println("Title is:" + title);
-		return "";
+		return url;
 	}
 	
 	// ele is <li> tag for instance
@@ -209,11 +238,22 @@ public class Scraper {
 		String str = null;
 		if(ele.select("h5") != null && ele.select("h5").first() != null) {
 			str = ele.select("h5").first().text();
+//			System.out.println("^^^^^^^^" + str);
 			if(str.equals("Sponsored")) {
 				return true;
 			}
 		}
 		return false;
+	}
+	
+	private boolean isShopByCategory(Element ele){
+		if(ele.getElementsByClass("acs-mn2-midWidgetHeader").text().equals("Shop by Category")) {
+//			System.out.println("Shop by Category");
+			return true;
+		}
+		else {
+			return false;
+		}
 	}
 	
 	/*TODO start service, implement this to make sure that it only 
@@ -231,5 +271,14 @@ public class Scraper {
 		System.out.println(s.getTotalCountOfItems(s.getSummaryText(document)));
 		System.out.println(s.getItemsCountsPerPage(document));
 	    List<ProductItem> products = s.getItemsPerPage(document);
+	    
+	    PropertyConfigurator.configure("log4j.properties");
+        // 记录debug级别的信息  
+//        logger.debug("This is debug message.");  
+//        // 记录info级别的信息  
+//        logger.info("This is info message.");  
+//        // 记录error级别的信息  
+//        logger.error("This is error message.");
+
     }
 }
