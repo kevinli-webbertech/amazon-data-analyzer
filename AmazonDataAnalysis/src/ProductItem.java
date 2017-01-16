@@ -77,10 +77,10 @@ public class ProductItem {
 	}
 
 	public void setImageURLs() {
-		Elements images = document.getElementsByClass("imgTagWrapper");
-		System.out.println(images);
-//		System.out.println(images.select("img[src].class"));
-		this.imageURLs = imageURLs;
+//		Elements images = document.getElementsByClass("imgTagWrapper");
+//		System.out.println(images);
+////		System.out.println(images.select("img[src].class"));
+//		this.imageURLs = imageURLs;
 	}
 	
 	public String getImageURLs(){

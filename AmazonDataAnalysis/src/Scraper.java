@@ -34,9 +34,10 @@ import org.apache.log4j.PropertyConfigurator;
  * */
 
 public class Scraper {
-	private Document document;
+	public Document document;
 	private static Scraper scraper = new Scraper();
-	final static String URL = "https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=daypack";
+	final static String initURL = "https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=daypack";
+	public String nextURL = null;
 	public static Logger logger = Logger.getLogger(Scraper.class);
 	
 	/**
@@ -46,10 +47,11 @@ public class Scraper {
 	 * 
 	 * TODO need the log4j to hook up so that the exception handling can log stuff.
 	 * rename this method, as setDocument right now is a very bad name
+	 * @return 
 	 * */
-	public void setDocument(String url) {
+	public Document setDocument(String url) {
 		try {
-			document = Jsoup.connect(URL)
+			document = Jsoup.connect(initURL)
 					.userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
 							+ "Chrome/19.0.1042.0 Safari/535.21").timeout(10000)
 					.get();
@@ -58,6 +60,7 @@ public class Scraper {
 			e.printStackTrace();
 			logger.info("IOException");
 		}
+		return document;
 	}
 
 	private Scraper() {}
@@ -164,7 +167,7 @@ public class Scraper {
 				product.setRating();
 				product.setBsr();
 				product.setReviewNumber();
-				product.setImageURLs();
+//				product.setImageURLs();
 				System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" + "\n");
 			}
 		}
@@ -256,6 +259,12 @@ public class Scraper {
 		}
 	}
 	
+	public String getNextPage(Element ele){
+		Element nextPageEles = document.getElementById("centerBelowMinus").getElementsByClass("pagnLink").first().child(0);
+		String nextPageLink = "Amazon.com" + nextPageEles.attr("href");
+		return nextPageLink;
+	}
+	
 	/*TODO start service, implement this to make sure that it only 
 	 * starts once and check the document is set. 
 	*/
@@ -266,11 +275,22 @@ public class Scraper {
 	*/
 	public static void main(String[] args) throws Exception {
 		Scraper s = Scraper.getInstance();
-        s.setDocument(Scraper.URL);
+        s.setDocument(Scraper.initURL);
         Document document = s.getDocument();
-		System.out.println(s.getTotalCountOfItems(s.getSummaryText(document)));
-		System.out.println(s.getItemsCountsPerPage(document));
-	    List<ProductItem> products = s.getItemsPerPage(document);
+        int totalCountOfItems = s.getTotalCountOfItems(s.getSummaryText(document));
+		System.out.println(totalCountOfItems);
+		int itemsCountsPerPage = s.getItemsCountsPerPage(document);
+		System.out.println(itemsCountsPerPage);
+	    List<ProductItem> totalProducts = s.getItemsPerPage(document);
+	    s.nextURL = s.getNextPage(document);
+		for(int i=1; i<3 /*Math.ceil(totalCountOfItems/itemsCountsPerPage)-1*/; i++){
+			s.setDocument(s.nextURL);
+			s.document = s.getDocument();
+			totalProducts.addAll(s.getItemsPerPage(s.document));
+			s.nextURL = s.getNextPage(s.document);
+			System.out.println("*****" + totalProducts.size() + "******");
+		}
+	    String nextURL = s.getNextPage(s.document);
 	    
 	    PropertyConfigurator.configure("log4j.properties");
         // 记录debug级别的信息  
