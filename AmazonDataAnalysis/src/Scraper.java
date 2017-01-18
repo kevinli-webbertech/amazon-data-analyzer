@@ -6,6 +6,8 @@ import org.jsoup.select.Elements;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
+import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 
 /**
  * This is an amazon scraper, the problem is that, we are going to do the pagination of 
@@ -32,10 +34,12 @@ import java.io.*;
  * */
 
 public class Scraper {
-	private Document document;
+	public Document document;
 	private static Scraper scraper = new Scraper();
-	final static String URL = "https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=daypack";
-
+	final static String initURL = "https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=daypack";
+	public String nextURL = null;
+	public static Logger logger = Logger.getLogger(Scraper.class);
+	
 	/**
 	 * This is compulsory to run otherwise the Document object will be null.
 	 * 
@@ -43,17 +47,20 @@ public class Scraper {
 	 * 
 	 * TODO need the log4j to hook up so that the exception handling can log stuff.
 	 * rename this method, as setDocument right now is a very bad name
+	 * @return 
 	 * */
-	public void setDocument(String url) {
+	public Document setDocument(String url) {
 		try {
-			document = Jsoup.connect(URL)
+			document = Jsoup.connect(initURL)
 					.userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
 							+ "Chrome/19.0.1042.0 Safari/535.21").timeout(10000)
 					.get();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			logger.info("IOException");
 		}
+		return document;
 	}
 
 	private Scraper() {}
@@ -131,7 +138,7 @@ public class Scraper {
 		
 		//the following is a util function for testing
 		//it output 20 items per page including 4 sponsored links.
-		printElements(middleColumn);
+//		printElements(middleColumn);
 		
 		//TODO need to parse each li tag and see if it is a "sponsor" item, if not add it to List.
 		/*
@@ -140,21 +147,49 @@ public class Scraper {
 				System.out.println(item.attr("id")+ " " + item.attr("data-asin"));
 			}
 		*/
+		for(int i=0; i<middleColumn.size(); i++){
+			Element ele = middleColumn.get(i);
+			ProductItem product = new ProductItem();
+			if(isSponsoredProduct(ele)) {
+				System.out.println("%%%%%%isSponsoredProduct");
+				continue;
+			}
+			else if(isShopByCategory(ele)) {
+				System.out.println("isShopByCategory");
+				continue;
+			}
+			else{
+				product.setProductURL(ele);
+				product.setAsin(ele);
+				System.out.println(product.getProductURL());
+				System.out.println(product.getAsin());
+				product.setDocument(product.getProductURL());
+				product.setRating(product.getDocument());
+				product.setBsr(product.getDocument());
+				product.setReviewNumber(product.getDocument());
+//				product.setImageURLs();
+				System.out.println("bsr: "+ product.getBsr());
+				System.out.println("bsr: "+ product.getRating());
+				System.out.println("bsr: "+ product.getReviewNumber());
+				System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" + "\n");
+			}
+		}
+		
 		return products;
 	}
 	
 	public void printElements(Elements elements) {
 		//for (int i=0;i<elements.size();i++) {
-		for (int i=0;i<1;i++) {
+		for (int i=0;i<elements.size();i++) {
 			Element item = elements.get(i);
-			if(isSponsoredProduct(item)) {
-				System.out.println("Sponsored" + " " + item.attr("data-asin"));
-			} else {
-				System.out.println(item.attr("data-asin"));
-			}
+//			if(isSponsoredProduct(item)) {
+//				System.out.println("Sponsored" + " " + item.attr("data-asin"));
+//			} else {
+//				System.out.println(item.attr("data-asin"));
+//			}
 				
 			getURL(item);
-			System.out.println(item.attr("data-asin"));
+//			System.out.println(item.attr("data-asin"));
 		}
 	}
 	
@@ -200,7 +235,7 @@ public class Scraper {
 		String title = link.text();
 		System.out.println("URL is: " + url);
 		System.out.println("Title is:" + title);
-		return "";
+		return url;
 	}
 	
 	// ele is <li> tag for instance
@@ -209,11 +244,28 @@ public class Scraper {
 		String str = null;
 		if(ele.select("h5") != null && ele.select("h5").first() != null) {
 			str = ele.select("h5").first().text();
+//			System.out.println("^^^^^^^^" + str);
 			if(str.equals("Sponsored")) {
 				return true;
 			}
 		}
 		return false;
+	}
+	
+	private boolean isShopByCategory(Element ele){
+		if(ele.getElementsByClass("acs-mn2-midWidgetHeader").text().equals("Shop by Category")) {
+//			System.out.println("Shop by Category");
+			return true;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	public String getNextPage(Element ele){
+		Element nextPageEles = document.getElementById("centerBelowMinus").getElementsByClass("pagnLink").first().child(0);
+		String nextPageLink = "Amazon.com" + nextPageEles.attr("href");
+		return nextPageLink;
 	}
 	
 	/*TODO start service, implement this to make sure that it only 
@@ -226,10 +278,30 @@ public class Scraper {
 	*/
 	public static void main(String[] args) throws Exception {
 		Scraper s = Scraper.getInstance();
-        s.setDocument(Scraper.URL);
+        s.setDocument(Scraper.initURL);
         Document document = s.getDocument();
-		System.out.println(s.getTotalCountOfItems(s.getSummaryText(document)));
-		System.out.println(s.getItemsCountsPerPage(document));
-	    List<ProductItem> products = s.getItemsPerPage(document);
+        int totalCountOfItems = s.getTotalCountOfItems(s.getSummaryText(document));
+		System.out.println(totalCountOfItems);
+		int itemsCountsPerPage = s.getItemsCountsPerPage(document);
+		System.out.println(itemsCountsPerPage);
+	    List<ProductItem> totalProducts = s.getItemsPerPage(document);
+	    s.nextURL = s.getNextPage(document);
+		for(int i=1; i<3 /*Math.ceil(totalCountOfItems/itemsCountsPerPage)-1*/; i++){
+			s.setDocument(s.nextURL);
+			s.document = s.getDocument();
+			totalProducts.addAll(s.getItemsPerPage(s.document));
+			s.nextURL = s.getNextPage(s.document);
+			System.out.println("*****" + totalProducts.size() + "******");
+		}
+	    String nextURL = s.getNextPage(s.document);
+	    
+	    PropertyConfigurator.configure("log4j.properties");
+        // 记录debug级别的信息  
+//        logger.debug("This is debug message.");  
+//        // 记录info级别的信息  
+//        logger.info("This is info message.");  
+//        // 记录error级别的信息  
+//        logger.error("This is error message.");
+
     }
 }

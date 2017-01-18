@@ -3,6 +3,11 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.junit.JUNIT_CONTAINER/4"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/JSOUP"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.USER_LIBRARY/Log4j"/>
+	<classpathentry kind="lib" path="/Users/xiaofeng/amazon-data-analyzer/AmazonDataAnalysis/lib/commons-lang3-3.4.jar"/>
+	<classpathentry kind="lib" path="/Users/xiaofeng/amazon-data-analyzer/AmazonDataAnalysis/lib/jsoup-1.10.1-javadoc.jar"/>
+	<classpathentry kind="lib" path="/Users/xiaofeng/amazon-data-analyzer/AmazonDataAnalysis/lib/jsoup-1.10.1-sources.jar"/>
+	<classpathentry kind="lib" path="/Users/xiaofeng/amazon-data-analyzer/AmazonDataAnalysis/lib/jsoup-1.10.1.jar"/>
+	<classpathentry kind="lib" path="/Users/xiaofeng/amazon-data-analyzer/AmazonDataAnalysis/lib/apache-logging-log4j.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
