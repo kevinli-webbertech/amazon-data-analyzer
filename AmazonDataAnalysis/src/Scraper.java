@@ -163,11 +163,14 @@ public class Scraper {
 				product.setAsin(ele);
 				System.out.println(product.getProductURL());
 				System.out.println(product.getAsin());
-				product.setDocument();
-				product.setRating();
-				product.setBsr();
-				product.setReviewNumber();
+				product.setDocument(product.getProductURL());
+				product.setRating(product.getDocument());
+				product.setBsr(product.getDocument());
+				product.setReviewNumber(product.getDocument());
 //				product.setImageURLs();
+				System.out.println("bsr: "+ product.getBsr());
+				System.out.println("bsr: "+ product.getRating());
+				System.out.println("bsr: "+ product.getReviewNumber());
 				System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" + "\n");
 			}
 		}
