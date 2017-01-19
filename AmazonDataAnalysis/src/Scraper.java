@@ -161,16 +161,16 @@ public class Scraper {
 			else{
 				product.setProductURL(ele);
 				product.setAsin(ele);
-				System.out.println(product.getProductURL());
-				System.out.println(product.getAsin());
+				System.out.println("Product URL:" + product.getProductURL());
+				System.out.println("ASIN:" + product.getAsin());
 				product.setDocument(product.getProductURL());
 				product.setRating(product.getDocument());
 				product.setBsr(product.getDocument());
 				product.setReviewNumber(product.getDocument());
 //				product.setImageURLs();
 				System.out.println("bsr: "+ product.getBsr());
-				System.out.println("bsr: "+ product.getRating());
-				System.out.println("bsr: "+ product.getReviewNumber());
+				System.out.println("Rating: "+ product.getRating());
+				System.out.println("ReviewNumber: "+ product.getReviewNumber());
 				System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" + "\n");
 			}
 		}
@@ -179,17 +179,9 @@ public class Scraper {
 	}
 	
 	public void printElements(Elements elements) {
-		//for (int i=0;i<elements.size();i++) {
 		for (int i=0;i<elements.size();i++) {
 			Element item = elements.get(i);
-//			if(isSponsoredProduct(item)) {
-//				System.out.println("Sponsored" + " " + item.attr("data-asin"));
-//			} else {
-//				System.out.println(item.attr("data-asin"));
-//			}
-				
 			getURL(item);
-//			System.out.println(item.attr("data-asin"));
 		}
 	}
 	
@@ -230,6 +222,7 @@ public class Scraper {
 			url = java.net.URLDecoder.decode(link.attr("abs:href"), "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block, log this to log file
+			logger.error("if a exception happend while getting the URL");
 			e.printStackTrace();
 		}
 		String title = link.text();
@@ -246,6 +239,7 @@ public class Scraper {
 			str = ele.select("h5").first().text();
 //			System.out.println("^^^^^^^^" + str);
 			if(str.equals("Sponsored")) {
+				logger.debug("This product is sponsored, so we can ignore it.");
 				return true;
 			}
 		}
@@ -255,6 +249,7 @@ public class Scraper {
 	private boolean isShopByCategory(Element ele){
 		if(ele.getElementsByClass("acs-mn2-midWidgetHeader").text().equals("Shop by Category")) {
 //			System.out.println("Shop by Category");
+			logger.debug("This item is ShopByCategory, so we can ignore it.");
 			return true;
 		}
 		else {
@@ -277,6 +272,8 @@ public class Scraper {
      * such a large file is hard to read.
 	*/
 	public static void main(String[] args) throws Exception {
+		PropertyConfigurator.configure("log4j.properties");
+		
 		Scraper s = Scraper.getInstance();
         s.setDocument(Scraper.initURL);
         Document document = s.getDocument();
@@ -293,15 +290,5 @@ public class Scraper {
 			s.nextURL = s.getNextPage(s.document);
 			System.out.println("*****" + totalProducts.size() + "******");
 		}
-	    String nextURL = s.getNextPage(s.document);
-	    
-	    PropertyConfigurator.configure("log4j.properties");
-        // 记录debug级别的信息  
-//        logger.debug("This is debug message.");  
-//        // 记录info级别的信息  
-//        logger.info("This is info message.");  
-//        // 记录error级别的信息  
-//        logger.error("This is error message.");
-
     }
 }
