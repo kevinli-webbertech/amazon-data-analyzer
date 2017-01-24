@@ -90,10 +90,12 @@ public class ProductItem {
 	 * @return
 	 * */
 	public void setImageURLs(Element ele) {
-		// Elements images = document.getElementsByClass("imgTagWrapper");
-		// System.out.println(images);
-		//// System.out.println(images.select("img[src].class"));
-		// this.imageURLs = imageURLs;
+		// the follwoing selector will narrow down the images, we will need to further extract <img src> and 
+		// concatenate the urls with ;
+		   Elements images = document.select("div#altImages > ul > li");
+		   System.out.println(images);
+		   System.out.println(images.select("img[src].class"));
+		   this.imageURLs = imageURLs;
 	}
 
 	public String getImageURLs() {

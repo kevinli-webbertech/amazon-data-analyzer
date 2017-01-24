@@ -168,7 +168,7 @@ public class Scraper {
 				product.setRating(product.getDocument());
 				product.setBsr(product.getDocument());
 				product.setReviewNumber(product.getDocument());
-                //product.setImageURLs();
+                product.setImageURLs(product.getDocument());
 				System.out.println("bsr: "+ product.getBsr());
 				System.out.println("Rating: "+ product.getRating());
 				System.out.println("ReviewNumber: "+ product.getReviewNumber());
@@ -281,12 +281,17 @@ public class Scraper {
 		System.out.println(itemsCountsPerPage);
 	    List<ProductItem> totalProducts = s.getItemsPerPage(document);
 	    s.nextURL = s.getNextPage(document);
-		for(int i=1; i<3 /*Math.ceil(totalCountOfItems/itemsCountsPerPage)-1*/; i++){
+		
+	    /*
+	    for(int i=1; i<3; 
+	      //Math.ceil(totalCountOfItems/itemsCountsPerPage)-1; 
+	    i++) {
 			s.setDocument(s.nextURL);
 			s.document = s.getDocument();
 			totalProducts.addAll(s.getItemsPerPage(s.document));
 			s.nextURL = s.getNextPage(s.document);
 			System.out.println("*****" + totalProducts.size() + "******");
 		}
+	    */
     }
 }
