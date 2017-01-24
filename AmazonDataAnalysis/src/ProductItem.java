@@ -46,6 +46,7 @@ public class ProductItem {
 			this.productURL = java.net.URLDecoder.decode(link.attr("abs:href"), "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			// TODO Auto-generated catch block, log this to log file
+			logger.error("if the product URL has not been found");;
 			e.printStackTrace();
 		}
 	}
@@ -70,6 +71,7 @@ public class ProductItem {
 					.timeout(10000).get();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
+			logger.error("if a problem happend while parsing the URL");
 			e.printStackTrace();
 		}
 	}
@@ -113,6 +115,7 @@ public class ProductItem {
 	public void setBsr(Document document) {
 		if (document.select("#SalesRank").isEmpty()) {
 			//TODO, need to log this, 
+			logger.debug("SalesRank identifier not found");
 			//Logging format: URL, CurrentPage(index/page 13 of 15,0000/16), TimeStamp(year-month-day-min-sec)
 			//Appending content to the log file
 			System.out.println("********SalesRank not find");

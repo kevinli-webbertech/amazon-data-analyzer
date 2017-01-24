@@ -6,6 +6,9 @@ import org.jsoup.select.Elements;
 import java.util.ArrayList;
 import java.util.List;
 import java.io.*;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+
 import org.apache.log4j.Logger;
 import org.apache.log4j.PropertyConfigurator;
 
@@ -51,14 +54,12 @@ public class Scraper {
 	 * */
 	public Document setDocument(String url) {
 		try {
-			document = Jsoup.connect(initURL)
+			document = Jsoup.connect(url)
 					.userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
 							+ "Chrome/19.0.1042.0 Safari/535.21").timeout(10000)
 					.get();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-			logger.info("IOException");
+			logger.error("Error in connecting to url" + url +" at " + LocalDateTime.now() + e.getMessage());
 		}
 		return document;
 	}
@@ -161,35 +162,26 @@ public class Scraper {
 			else{
 				product.setProductURL(ele);
 				product.setAsin(ele);
-				System.out.println(product.getProductURL());
-				System.out.println(product.getAsin());
+				System.out.println("Product URL:" + product.getProductURL());
+				System.out.println("ASIN:" + product.getAsin());
 				product.setDocument(product.getProductURL());
 				product.setRating(product.getDocument());
 				product.setBsr(product.getDocument());
 				product.setReviewNumber(product.getDocument());
-//				product.setImageURLs();
+                //product.setImageURLs();
 				System.out.println("bsr: "+ product.getBsr());
-				System.out.println("bsr: "+ product.getRating());
-				System.out.println("bsr: "+ product.getReviewNumber());
+				System.out.println("Rating: "+ product.getRating());
+				System.out.println("ReviewNumber: "+ product.getReviewNumber());
 				System.out.println("&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&" + "\n");
 			}
 		}
-		
 		return products;
 	}
 	
 	public void printElements(Elements elements) {
-		//for (int i=0;i<elements.size();i++) {
 		for (int i=0;i<elements.size();i++) {
 			Element item = elements.get(i);
-//			if(isSponsoredProduct(item)) {
-//				System.out.println("Sponsored" + " " + item.attr("data-asin"));
-//			} else {
-//				System.out.println(item.attr("data-asin"));
-//			}
-				
 			getURL(item);
-//			System.out.println(item.attr("data-asin"));
 		}
 	}
 	
@@ -224,13 +216,12 @@ public class Scraper {
 		 * https%3A%2F%2Fwww.amazon.com%2FGobago-Foldable-Backpack-Lightweight-Packable%2Fdp%2FB01HO4BAW6%2Fref%3Dsr_1_1%2F154-4658085-6387846%3Fie%3DUTF8%26qid%3D1484287411%26sr%3D8-1-spons%26keywords%3Ddaypack%26psc%3D1&amp;qualifier=1484287411&amp;id=3003244927772836&amp;widgetName=sp_atf
 		 * 
 		 * */
-		link.childNode(0).toString();
 		String url = null;
 		try {
 			url = java.net.URLDecoder.decode(link.attr("abs:href"), "UTF-8");
 		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block, log this to log file
-			e.printStackTrace();
+		    logger.error("Error happens in decoding URL of hyperlink object: "+ link + " " + e.getMessage());
+			
 		}
 		String title = link.text();
 		System.out.println("URL is: " + url);
@@ -244,8 +235,9 @@ public class Scraper {
 		String str = null;
 		if(ele.select("h5") != null && ele.select("h5").first() != null) {
 			str = ele.select("h5").first().text();
-//			System.out.println("^^^^^^^^" + str);
+         //	System.out.println("^^^^^^^^" + str);
 			if(str.equals("Sponsored")) {
+				logger.debug("This product is sponsored, so we can ignore it.");
 				return true;
 			}
 		}
@@ -254,7 +246,8 @@ public class Scraper {
 	
 	private boolean isShopByCategory(Element ele){
 		if(ele.getElementsByClass("acs-mn2-midWidgetHeader").text().equals("Shop by Category")) {
-//			System.out.println("Shop by Category");
+        // System.out.println("Shop by Category");
+			logger.debug("This item is ShopByCategory, so we can ignore it.");
 			return true;
 		}
 		else {
@@ -277,6 +270,8 @@ public class Scraper {
      * such a large file is hard to read.
 	*/
 	public static void main(String[] args) throws Exception {
+		PropertyConfigurator.configure("log4j.properties");
+		
 		Scraper s = Scraper.getInstance();
         s.setDocument(Scraper.initURL);
         Document document = s.getDocument();
@@ -293,15 +288,5 @@ public class Scraper {
 			s.nextURL = s.getNextPage(s.document);
 			System.out.println("*****" + totalProducts.size() + "******");
 		}
-	    String nextURL = s.getNextPage(s.document);
-	    
-	    PropertyConfigurator.configure("log4j.properties");
-        // 记录debug级别的信息  
-//        logger.debug("This is debug message.");  
-//        // 记录info级别的信息  
-//        logger.info("This is info message.");  
-//        // 记录error级别的信息  
-//        logger.error("This is error message.");
-
     }
 }
