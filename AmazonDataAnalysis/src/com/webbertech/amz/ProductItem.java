@@ -1,6 +1,6 @@
+package com.webbertech.amz;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -9,23 +9,24 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 public class ProductItem {
-
 	private String productURL; // URL to access each product page
-	private String asin; // ASIN/UPC number, which is uniquely identify a
-							// product
+	private String asin;       // ASIN/UPC number, which is uniquely identify a product
 	private Document document; // Document element of the specific product URL
-	private String imageURLs; // imageURLs of specific product
-	private float rating; // How many stars
-	private int reviewNumber; // How many people rate the star
-	private int bsr; // Best seller rank
+	private String imageURLs;  // imageURLs of specific product
+	private float rating;      // How many stars
+	private int reviewNumber;  // How many people rate the star
+	private int bsr;           // Best seller rank
 	public static Logger logger = Logger.getLogger(ProductItem.class);
 	
 	public ProductItem() {
 	}
 
+	/**
+	 * @param Element <li> element
+	 * @return
+	 * */
 	public void setProductURL(Element ele) {
 		Element link = ele.select("a").first();
-		// System.out.println(link);
 		// this link 's ChildNode has all the images I need, could be sperated
 		// with a comma and store in a String type.
 		// need to make another field in ProductItem.
@@ -41,13 +42,10 @@ public class ProductItem {
 		 * sp_atf
 		 * 
 		 */
-		link.childNode(0).toString();
 		try {
 			this.productURL = java.net.URLDecoder.decode(link.attr("abs:href"), "UTF-8");
 		} catch (UnsupportedEncodingException e) {
-			// TODO Auto-generated catch block, log this to log file
-			logger.error("if the product URL has not been found");;
-			e.printStackTrace();
+			logger.error("Error in decoding product URL of: " + link.attr("abs:href") + e.getMessage());
 		}
 	}
 
@@ -55,6 +53,10 @@ public class ProductItem {
 		return this.productURL;
 	}
 
+	/**
+	 * @param Element <li>
+	 * @return
+	 * */
 	public void setAsin(Element ele) {
 		this.asin = ele.attr("data-asin");
 	}
@@ -63,6 +65,10 @@ public class ProductItem {
 		return this.asin;
 	}
 
+	/**
+	 * @param String url of page to be connected
+	 * @return
+	 * */
 	public void setDocument(String url) {
 		try {
 			this.document = Jsoup.connect(url)
@@ -80,17 +86,27 @@ public class ProductItem {
 		return this.document;
 	}
 
-	public void setImageURLs() {
-		// Elements images = document.getElementsByClass("imgTagWrapper");
-		// System.out.println(images);
-		//// System.out.println(images.select("img[src].class"));
-		// this.imageURLs = imageURLs;
+	/**
+	 * @param Element <li>
+	 * @return
+	 * */
+	public void setImageURLs(Element ele) {
+		// the follwoing selector will narrow down the images, we will need to further extract <img src> and 
+		// concatenate the urls with ;
+		   Elements images = document.select("div#altImages > ul > li");
+		   System.out.println(images);
+		   System.out.println(images.select("img[src].class"));
+		   this.imageURLs = imageURLs;
 	}
 
 	public String getImageURLs() {
 		return this.imageURLs;
 	}
 
+    /**
+     * @param Document
+     * @return
+     * */
 	public void setRating(Document document) {
 		Elements ratingStr = document.select("span[title]");
 		String[] strs = ratingStr.get(1).attr("title").split(" ");
@@ -102,6 +118,10 @@ public class ProductItem {
 		return this.rating;
 	}
 
+	/**
+	 * @param Document
+	 * @return 
+	 * */
 	public void setReviewNumber(Document document) {
 		String reviewNumStrs = document.select("a:contains(customer reviews)").first().text();
 		this.reviewNumber = Integer
@@ -112,10 +132,14 @@ public class ProductItem {
 		return this.reviewNumber;
 	}
 
+	/**
+	 * @param Document
+	 * @return 
+	 * */
 	public void setBsr(Document document) {
 		if (document.select("#SalesRank").isEmpty()) {
 			//TODO, need to log this, 
-			logger.debug("SalesRank identifier not found");
+			logger.error("Best seller rank not found. Url is:" + this.getProductURL());
 			//Logging format: URL, CurrentPage(index/page 13 of 15,0000/16), TimeStamp(year-month-day-min-sec)
 			//Appending content to the log file
 			System.out.println("********SalesRank not find");
