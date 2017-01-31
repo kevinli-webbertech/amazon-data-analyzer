@@ -97,7 +97,8 @@ public class Scraper {
 	}
 
 	/*
-	 * TODO what is the better name to replace the Summary? It is the string on
+	 * TODO what is the better name to replace the Summary? 
+	 * It is the string on
 	 * top of each product search page such as:
 	 * "17-32 of 213,094 results for "Daypack""
 	 */
@@ -158,19 +159,8 @@ public class Scraper {
 		 */
 		Elements middleColumn = document.select("li[^data-]");
 
-		// the following is a util function for testing
-		// it output 20 items per page including 4 sponsored links.
-		// printElements(middleColumn);
-
-		// TODO need to parse each li tag and see if it is a "sponsor" item, if
-		// not add it to List.
-		/*
-		 * //print out only sponsored item, this is not working yet if
-		 * (item.select("h:contains(Sponsored)")!=null &&
-		 * !item.select("h:contains(Sponsored)").isEmpty()) {
-		 * System.out.println(item.attr("id")+ " " + item.attr("data-asin")); }
-		 */
 		for (int i = 0; i < middleColumn.size(); i++) {
+			//TODO missing URL to explain this if logics
 			Element ele = middleColumn.get(i);
 			ProductItem product = new ProductItem();
 			if (isSponsoredProduct(ele)) {
@@ -184,11 +174,11 @@ public class Scraper {
 				product.setAsin(ele);
 				System.out.println("Product URL:" + product.getProductURL());
 				System.out.println("ASIN:" + product.getAsin());
-				product.setDocument(product.getProductURL());
-				product.setRating(product.getDocument());
-				product.setBsr(product.getDocument());
-				product.setReviewNumber(product.getDocument());
-				product.setImageURLs(product.getDocument());
+				product.setPageDocument(product.getProductURL());
+				product.setRating(product.getPageDocument());
+				product.setBsr(product.getPageDocument());
+				product.setReviewNumber(product.getPageDocument());
+				product.setImageURLs(product.getPageDocument());
 				System.out.println("bsr: " + product.getBsr());
 				System.out.println("Rating: " + product.getRating());
 				System.out.println("ReviewNumber: " + product.getReviewNumber());
