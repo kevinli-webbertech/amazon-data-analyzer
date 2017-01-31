@@ -1,6 +1,9 @@
 package com.webbertech.amz;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -10,29 +13,27 @@ import org.jsoup.select.Elements;
 
 public class ProductItem {
 	private String productURL; // URL to access each product page
-	private String asin;       // ASIN/UPC number, which is uniquely identify a product
-	private Document document; // Document element of the specific product URL
-	private String imageURLs;  // imageURLs of specific product
-	private float rating;      // How many stars
-	private int reviewNumber;  // How many people rate the star
-	private int bsr;           // Best seller rank
+	private Document pageDocument; // Document element of each product URL
+	private String asin; // ASIN/UPC number, which is uniquely identify a
+							// product
+	private float rating; // How many stars
+	private int reviewNumber; // How many people rate the star
+	private String imageURLs; // imageURLs of specific product
+	private List<BestSellerRank> bsr; // Best seller rank, it can have multiple
 	public static Logger logger = Logger.getLogger(ProductItem.class);
-	
+
 	public ProductItem() {
 	}
 
 	/**
-	 * @param Element <li> element
+	 * @param Element
+	 *            <li>element
 	 * @return
-	 * */
+	 */
 	public void setProductURL(Element ele) {
 		Element link = ele.select("a").first();
-		// this link 's ChildNode has all the images I need, could be sperated
-		// with a comma and store in a String type.
-		// need to make another field in ProductItem.
-		// URL is also accessible from the href, the problem is that we have to
-		// decode it.
-		/*
+		 /* URL is also accessible from the href, the problem is that we have to
+		   decode it.
 		 * For example, what I got is:
 		 * 
 		 * https%3A%2F%2Fwww.amazon.com%2FGobago-Foldable-Backpack-Lightweight-
@@ -54,9 +55,9 @@ public class ProductItem {
 	}
 
 	/**
-	 * @param Element <li>
+	 * @param Element,  <li> element
 	 * @return
-	 * */
+	 */
 	public void setAsin(Element ele) {
 		this.asin = ele.attr("data-asin");
 	}
@@ -66,52 +67,68 @@ public class ProductItem {
 	}
 
 	/**
-	 * @param String url of page to be connected
+	 * @param String, url of page to be connected
 	 * @return
-	 * */
-	public void setDocument(String url) {
+	 */
+	public void setPageDocument(String url) {
 		try {
-			this.document = Jsoup.connect(url)
+			this.pageDocument = Jsoup.connect(url)
 					.userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
 							+ "Chrome/19.0.1042.0 Safari/535.21")
 					.timeout(10000).get();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			logger.error("if a problem happend while parsing the URL");
-			e.printStackTrace();
+			logger.error("error in connecting to the URL" + e.getMessage());
 		}
 	}
 
-	public Document getDocument() {
-		return this.document;
+	public Document getPageDocument() {
+		return this.pageDocument;
 	}
 
 	/**
-	 * @param Element <li>
+	 * @param Element, 
+	 *            Document constructed from a url
 	 * @return
-	 * */
-	public void setImageURLs(Element ele) {
-		// the follwoing selector will narrow down the images, we will need to further extract <img src> and 
-		// concatenate the urls with ;
-		   Elements images = document.select("div#altImages > ul > li");
-		   System.out.println(images);
-		   System.out.println(images.select("img[src].class"));
-		   this.imageURLs = imageURLs;
+	 */
+	//TODO images too small
+	public void setImageURLs(Document pageDocument) {
+		Elements imagesElements = pageDocument.select("div#altImages > ul > li").select("img");
+		StringBuilder str = new StringBuilder();
+		for (int i = 0; i < imagesElements.size(); i++) {
+			Element imgElement = imagesElements.get(i);
+			String url = imgElement.attr("src");
+			if (i == imagesElements.size() - 1) {
+				str.append(url);
+			} else {
+				str.append(url).append(",");
+			}
+		}
+		this.imageURLs = str.toString();
 	}
 
 	public String getImageURLs() {
 		return this.imageURLs;
 	}
 
-    /**
-     * @param Document
-     * @return
-     * */
-	public void setRating(Document document) {
-		Elements ratingStr = document.select("span[title]");
-		String[] strs = ratingStr.get(1).attr("title").split(" ");
-		String str = strs[0];
-		this.rating = Float.parseFloat(str);
+	/**
+	 * @param Document
+	 * @return
+	 */
+	public void setRating(Document pageDocument) {
+		/* Some link has no rating at all, for example like the following two links,
+		 * https://www.amazon.com/Swedish-Backpack-MERU-Svensk-Ryggsac/dp/B01MFCQ97T/ref=sr_1_12/160-5190271-6159765?ie=UTF8&qid=1485828944&sr=8-12&keywords=daypack
+		  https://www.amazon.com/Cycling-Backpack-Sunhiker-Resistant-Lightweight/dp/B00QQBKFCK/ref=sr_1_8/159-3531376-0865326?ie=UTF8&qid=1485831250&sr=8-8&keywords=daypack
+		*/
+		Elements ratingStr = pageDocument.select("span[title]");
+		if(ratingStr == null || ratingStr.size() == 0) {
+			logger.warn(this.productURL + "no rating element error"); //this is normal and we can accept that.
+			return;
+		}
+		if(ratingStr.size()>1) {
+			String[] strs = ratingStr.get(1).attr("title").split(" ");
+			String str = strs[0];
+			this.rating = Float.parseFloat(str);
+		}
 	}
 
 	public float getRating() {
@@ -120,10 +137,10 @@ public class ProductItem {
 
 	/**
 	 * @param Document
-	 * @return 
-	 * */
-	public void setReviewNumber(Document document) {
-		String reviewNumStrs = document.select("a:contains(customer reviews)").first().text();
+	 * @return
+	 */
+	public void setReviewNumber(Document pageDocument) {
+		String reviewNumStrs = pageDocument.select("a:contains(customer reviews)").first().text();
 		this.reviewNumber = Integer
 				.parseInt(StringUtils.substringBetween(reviewNumStrs, "", " cus").trim().replaceAll(",", ""));
 	}
@@ -132,32 +149,77 @@ public class ProductItem {
 		return this.reviewNumber;
 	}
 
+	// =============Need to redo the following two methods===================
 	/**
 	 * @param Document
-	 * @return 
-	 * */
-	public void setBsr(Document document) {
-		if (document.select("#SalesRank").isEmpty()) {
-			//TODO, need to log this, 
-			logger.error("Best seller rank not found. Url is:" + this.getProductURL());
-			//Logging format: URL, CurrentPage(index/page 13 of 15,0000/16), TimeStamp(year-month-day-min-sec)
-			//Appending content to the log file
-			System.out.println("********SalesRank not find");
-		}
-		if (!document.select("#SalesRank").isEmpty()) {
-			Elements bsrEle = document.select("#SalesRank");
-			this.bsr = Integer.valueOf(StringUtils.substringBetween(bsrEle.text(), "#", " in").trim().replaceAll(",", ""));
+	 * @return
+	 */
+
+	/*
+	 * Taking care of the following senarios 1. comment logging issue 2. some
+	 * product has bsr 3. some product does not have bsr
+	 * 
+	 * Logging format: URL, CurrentPage(index/page 13 of 15,0000/16),
+	 * TimeStamp(year-month-day-min-sec) Appending content to the log file
+	 * 
+	 * Example of multiple ranking: 
+	 * 
+	 * Product URL:https://www.amazon.com/Outlander-Packable-Lightweight-Backpack-Daypack/dp/B0092ECRLA/ref=sr_1_3/166-4228605-2480935?ie=UTF8&qid=1485819426&sr=8-3&keywords=daypack
+		ASIN:B0092ECRLA
+		
+        Product Details has: 
+		Amazon Best Sellers Rank: #222 in Sports & Outdoors (See Top 100 in Sports & Outdoors)
+        #3 in Sports & Outdoors > Outdoor Recreation > Camping & Hiking > Backpacks & Bags > Backpacking Packs > Hiking Daypacks
+
+	 */
+	public void setBsr(Document pageDocument) {
+		List<BestSellerRank> BSRs = new ArrayList<>();
+		Elements bsrElements = pageDocument.select("li#SalesRank");
+		
+		//TODO iterate through all the elements to get all the categories and its rankings.
+		
+		/*
+		 * <li id="SalesRank"> <b>Amazon Best Sellers Rank:</b> #222 in Sports &amp; Outdoors (<a href="https://www.amazon.com/gp/bestsellers/sporting-goods/ref=pd_dp_ts_sg_1">See Top 100 in Sports &amp; Outdoors</a>) 
+		 *  <style type="text/css">
+			.zg_hrsr { margin: 0; padding: 0; list-style-type: none; }
+			.zg_hrsr_item { margin: 0 0 0 10px; }
+			.zg_hrsr_rank { display: inline-block; width: 80px; text-align: right; }
+			</style> 
+ 			<ul class="zg_hrsr"> 
+  				<li class="zg_hrsr_item"> <span class="zg_hrsr_rank">#3</span> <span class="zg_hrsr_ladder">in&nbsp;
+  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/ref=pd_zg_hrsr_sg_1_1">Sports &amp; Outdoors</a> &gt; 
+  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/706814011/ref=pd_zg_hrsr_sg_1_2">Outdoor Recreation</a> &gt; 
+  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/3400371/ref=pd_zg_hrsr_sg_1_3">Camping &amp; Hiking</a> &gt; 
+  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/3400391/ref=pd_zg_hrsr_sg_1_4">Backpacks &amp; Bags</a> &gt; 
+  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/10208054011/ref=pd_zg_hrsr_sg_1_5">Backpacking Packs</a> &gt; <b>
+  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/3400471/ref=pd_zg_hrsr_sg_1_6_last">Hiking Daypacks</a></b></span> 
+  				</li> 
+ 			</ul> 
+ 		   </li>
+		 * */
+		
+		//Need to find a URL that has two sales rank
+		if (!bsrElements.isEmpty()) {
+			//Amazon Best Sellers Rank: #89 in Sports & Outdoors (See Top 100 in Sports & Outdoors) #1 in 
+			//Sports & Outdoors > Outdoor Recreation > Camping & Hiking > Backpacks & Bags > Backpacking Packs > Hiking Daypacks
+			int bsrValue = Integer
+					.valueOf(StringUtils.substringBetween(bsrElements.text(), "#", " in").trim().replaceAll(",", ""));
 		} else {
+			// TODO Missing URL, need to find out what it is
+			
+			logger.error("Best seller rank not found. Url is:" + this.getProductURL());
+			System.out.println("********SalesRank not find");
+			
 			System.out.println("find special product");
-			Elements bsrEles = document.getElementsByClass("a-color-secondary a-size-base prodDetSectionEntry")
+			Elements bsrEles = pageDocument.getElementsByClass("a-color-secondary a-size-base prodDetSectionEntry")
 					.select(":contains(Best Sellers Rank)");
 			Element bsrEle = bsrEles.first();
 			String temp = bsrEle.siblingElements().text();
-			this.bsr = Integer.parseInt(StringUtils.substringBetween(temp, "#", " in").trim().replaceAll(",", ""));
+			int bsrValue = Integer.parseInt(StringUtils.substringBetween(temp, "#", " in").trim().replaceAll(",", ""));
 		}
 	}
 
-	public int getBsr() {
+	public List<BestSellerRank> getBsr() {
 		return bsr;
 	}
 }
