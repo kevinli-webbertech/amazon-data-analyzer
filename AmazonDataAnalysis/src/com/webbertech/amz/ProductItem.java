@@ -124,7 +124,7 @@ public class ProductItem {
 		*/
 		Elements ratingStr = pageDocument.select("span[title]");
 		if(ratingStr == null || ratingStr.size() == 0) {
-			logger.warn(this.productURL + "no rating element error"); //this is normal and we can accept that.
+			logger.warn(this.productURL + " no rating element error"); //this is normal and we can accept that.
 			return;
 		}
 		if(ratingStr.size()>1) {
@@ -144,6 +144,11 @@ public class ProductItem {
 	 */
 	public void setReviewNumber(Document pageDocument) {
 		String reviewNumStrs = pageDocument.select("a:contains(customer reviews)").first().text();
+		if (reviewNumStrs==null) {
+			logger.error("no review number found for url: " + this.productURL);
+			return;
+		}
+		
 		String reviewNumber = StringUtils.substringBetween(reviewNumStrs, "", " cus").trim().replaceAll(",", "");
 		
 		if (! "".equals(reviewNumber) ) {

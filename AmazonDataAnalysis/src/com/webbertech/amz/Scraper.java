@@ -101,7 +101,6 @@ public class Scraper {
 	 */
 	public String getSearchResultSummaryText(Document document) {
 		Element totalCount = document.select("div.s-first-column").first();
-		System.out.println("summary text is:" + totalCount.text());
 		return totalCount.text();
 	}
 
@@ -154,7 +153,7 @@ public class Scraper {
 		 * <li id="result_0" data-asin="B01IFVL7VG"
 		 * class="s-result-item celwidget">
 		 */
-		Elements middleColumn = document.select("li[^data-]");
+		Elements productLists = document.select("li[^data-]");
 
 		//TODO need to shuffle this Elements array, and do not iterate in the normal order
 		//TODO need to make a flag to turn this feature on and off, make a class called ScraperProperty.java and read param from a property file
@@ -162,7 +161,7 @@ public class Scraper {
 		//Turn this on when the flag is possible, and when I finish the bsr implementation
 		//Collections.shuffle(middleColumn);
 		
-		for (int i = 0; i < middleColumn.size(); i++) {
+		for (int i = 0; i < productLists.size(); i++) {
 			
 			/*Turn this on if the ip is still banned, it will greatly slow down the single thread though.
 			 * Generate a random number between 1-3 secs
@@ -177,18 +176,15 @@ public class Scraper {
 			*/
 			
 			//TODO missing URL to explain this if logics
-			Element ele = middleColumn.get(i);
+			Element ele = productLists.get(i);
 			ProductItem product = new ProductItem();
-			if (isSponsoredProduct(ele)) {
-				System.out.println("%%%%%%isSponsoredProduct");
+			if (ScraperUtility.isSponsoredProduct(ele)) {
 				continue;
-			} else if (isShopByCategory(ele)) {
-				System.out.println("isShopByCategory");
+			} else if (ScraperUtility.isShopByCategory(ele)) {
 				continue;
 			} else {
 				product.setProductURL(ele);
 				product.setAsin(ele);
-				
 				product.setPageDocument(product.getProductURL());
 				product.setRating(product.getPageDocument());
 				product.setBsr(product.getPageDocument());
@@ -207,13 +203,6 @@ public class Scraper {
 			}
 		}
 		return products;
-	}
-
-	public void printElements(Elements elements) {
-		for (int i = 0; i < elements.size(); i++) {
-			Element item = elements.get(i);
-			getURL(item);
-		}
 	}
 
 	/**
@@ -270,29 +259,6 @@ public class Scraper {
 		return url;
 	}
 
-	// ele is <li> tag for instance
-	/* TODO: refactor this */
-	private boolean isSponsoredProduct(Element ele) {
-		String str = null;
-		if (ele.select("h5") != null && ele.select("h5").first() != null) {
-			str = ele.select("h5").first().text();
-			if (str.equals("Sponsored")) {
-				logger.debug("This product is sponsored, so we can ignore it.");
-				return true;
-			}
-		}
-		return false;
-	}
-
-	private boolean isShopByCategory(Element ele) {
-		if (ele.getElementsByClass("acs-mn2-midWidgetHeader").text().equals("Shop by Category")) {
-			// System.out.println("Shop by Category");
-			logger.debug("This item is ShopByCategory, so we can ignore it.");
-			return true;
-		} else {
-			return false;
-		}
-	}
 
 	public String getNextPage(Element ele) {
 		Element nextPageEles = document.getElementById("centerBelowMinus").getElementsByClass("pagnLink").first()
@@ -301,7 +267,7 @@ public class Scraper {
 		return nextPageLink;
 	}
 
-	// prevent multithread to start it twice
+	// Prevent multithread to start it twice.
 	synchronized public void start() {
 		if (Scraper.started) {
 			return;
@@ -312,8 +278,12 @@ public class Scraper {
 		int totalCountOfItems = scraper.getTotalCountOfItems(researchResultText);
 		int itemsCountsPerPage = scraper.getItemsCountsPerPage(researchResultText);
 		
+		//TODO the following lines will be commented out once it is done
+		System.out.println("summary text is:" + researchResultText);
 		System.out.println(totalCountOfItems);
 		System.out.println(itemsCountsPerPage);
+		
+		
 		List<ProductItem> totalProducts = scraper.getItemsPerPage(document);
 		scraper.nextURL = scraper.getNextPage(document);
  
