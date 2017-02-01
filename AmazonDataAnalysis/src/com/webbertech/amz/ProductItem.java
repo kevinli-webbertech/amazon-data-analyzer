@@ -4,6 +4,9 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.log4j.Logger;
 import org.jsoup.Jsoup;
@@ -19,7 +22,7 @@ public class ProductItem {
 	private float rating; // How many stars
 	private int reviewNumber; // How many people rate the star
 	private String imageURLs; // imageURLs of specific product
-	private List<BestSellerRank> bsr; // Best seller rank, it can have multiple
+	private List<BestSellerRank> bsr = new ArrayList<>(); // Best seller rank, it can have multiple
 	public static Logger logger = Logger.getLogger(ProductItem.class);
 
 	public ProductItem() {
@@ -173,7 +176,7 @@ public class ProductItem {
 
 	 */
 	public void setBsr(Document pageDocument) {
-		List<BestSellerRank> BSRs = new ArrayList<>();
+	
 		Elements bsrElements = pageDocument.select("li#SalesRank");
 		
 		//TODO iterate through all the elements to get all the categories and its rankings.
@@ -200,12 +203,30 @@ public class ProductItem {
 		
 		//Need to find a URL that has two sales rank
 		if (!bsrElements.isEmpty()) {
-			//Amazon Best Sellers Rank: #89 in Sports & Outdoors (See Top 100 in Sports & Outdoors) #1 in 
-			//Sports & Outdoors > Outdoor Recreation > Camping & Hiking > Backpacks & Bags > Backpacking Packs > Hiking Daypacks
-			int bsrValue = Integer
-					.valueOf(StringUtils.substringBetween(bsrElements.text(), "#", " in").trim().replaceAll(",", ""));
+			
+			/*
+			 * Raw text to extract from: 
+			 * 
+			 * Amazon Best Sellers Rank: #89 in Sports & Outdoors (See Top 100 in Sports & Outdoors) #1 in 
+			   Sports & Outdoors > Outdoor Recreation > Camping & Hiking > Backpacks & Bags > Backpacking Packs > Hiking Daypacks
+		    */
+			//String rankingText = StringUtils.substringBetween(bsrElements.text(), "#", " in").trim();
+			
+			String rankingText = bsrElements.text();
+			String regex= "#\\d+\\s+";
+			Pattern pattern = Pattern.compile(regex);
+			Matcher matcher = pattern.matcher(rankingText);
+			int count =0;
+			//TODO need to get the category text out of the pattern
+			while (matcher.find()) {    
+               String ranking = matcher.group().replace("#", ""); 
+               this.bsr.add(new BestSellerRank(new Integer(count++).toString(),ranking));
+            }    
+			
+			/* int bsrValue = Integer
+					.valueOf(rankingText.replaceAll(",", ""));*/
 		} else {
-			// TODO Missing URL, need to find out what it is
+			// TODO Missing URL, need to find out what it is, not sure about the following bsr.
 			
 			logger.error("Best seller rank not found. Url is:" + this.getProductURL());
 			System.out.println("********SalesRank not find");

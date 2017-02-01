@@ -80,7 +80,7 @@ public class Scraper {
 							+ "Chrome/19.0.1042.0 Safari/535.21")
 					.timeout(10000).get();
 		} catch (IOException e) {
-			logger.error("Error in connecting to url" + url + " at " + LocalDateTime.now() + e.getMessage());
+			logger.error("Error in connecting to url: " + url + " at " + LocalDateTime.now() + e.getMessage()+"\n");
 		}
 		return document;
 	}
