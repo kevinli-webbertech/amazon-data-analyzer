@@ -6,7 +6,9 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.io.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -159,7 +161,26 @@ public class Scraper {
 		 */
 		Elements middleColumn = document.select("li[^data-]");
 
+		//TODO need to shuffle this Elements array, and do not iterate in the normal order
+		//TODO need to make a flag to turn this feature on and off, make a class called ScraperProperty.java and read param from a property file
+		
+		//Turn this on when the flag is possible, and when I finish the bsr implementation
+		//Collections.shuffle(middleColumn);
+		
 		for (int i = 0; i < middleColumn.size(); i++) {
+			
+			/*Turn this on if the ip is still banned, it will greatly slow down the single thread though.
+			 * Generate a random number between 1-3 secs
+			
+			
+			long rand = (int)(Math.random()*2)+1;
+			try {
+				Thread.sleep(rand);
+			} catch (InterruptedException e) {
+				logger.error(e.getMessage());
+			}
+			*/
+			
 			//TODO missing URL to explain this if logics
 			Element ele = middleColumn.get(i);
 			ProductItem product = new ProductItem();
@@ -172,17 +193,22 @@ public class Scraper {
 			} else {
 				product.setProductURL(ele);
 				product.setAsin(ele);
-				System.out.println("Product URL:" + product.getProductURL());
-				System.out.println("ASIN:" + product.getAsin());
+				
 				product.setPageDocument(product.getProductURL());
 				product.setRating(product.getPageDocument());
 				product.setBsr(product.getPageDocument());
 				product.setReviewNumber(product.getPageDocument());
 				product.setImageURLs(product.getPageDocument());
+				
+				//the following are for testing
+				System.out.println("Product URL:" + product.getProductURL());
+				System.out.println("ASIN:" + product.getAsin());
 				System.out.println("bsr: " + product.getBsr());
 				System.out.println("Rating: " + product.getRating());
 				System.out.println("ReviewNumber: " + product.getReviewNumber());
 				System.out.println("******End of a Product******" + "\n");
+				
+				products.add(product);
 			}
 		}
 		return products;
@@ -295,7 +321,7 @@ public class Scraper {
 		System.out.println(itemsCountsPerPage);
 		List<ProductItem> totalProducts = scraper.getItemsPerPage(document);
 		scraper.nextURL = scraper.getNextPage(document);
-
+ 
 		// TODO uncomment these lines, now for debugging, we only
 		// do one page interations.
 		/*
