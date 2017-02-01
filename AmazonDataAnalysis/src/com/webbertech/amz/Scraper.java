@@ -6,14 +6,10 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
 import java.io.*;
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import org.apache.log4j.Logger;
-import org.apache.log4j.PropertyConfigurator;
 
 /**
  * This is an amazon scraper, the problem is that, we are going to do the
@@ -45,7 +41,9 @@ public class Scraper {
 	private static Scraper scraper = new Scraper();
 	public String nextURL = null;
 	public static Logger logger = Logger.getLogger(Scraper.class);
-
+    private final static String CONNECT_ATTR = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
+			+ "Chrome/19.0.1042.0 Safari/535.21" ;
+	
 	final static boolean started = false;
 
 	private Scraper() {
@@ -77,10 +75,7 @@ public class Scraper {
 	 */
 	public Document setDocument(String url) {
 		try {
-			document = Jsoup.connect(url)
-					.userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
-							+ "Chrome/19.0.1042.0 Safari/535.21")
-					.timeout(10000).get();
+			document = Jsoup.connect(url).userAgent(CONNECT_ATTR).timeout(10000).get();
 		} catch (IOException e) {
 			logger.error("Error in connecting to url: " + url + " at " + LocalDateTime.now() + e.getMessage()+"\n");
 		}
@@ -104,7 +99,7 @@ public class Scraper {
 	 * top of each product search page such as:
 	 * "17-32 of 213,094 results for "Daypack""
 	 */
-	public String getSummaryText(Document document) {
+	public String getSearchResultSummaryText(Document document) {
 		Element totalCount = document.select("div.s-first-column").first();
 		System.out.println("summary text is:" + totalCount.text());
 		return totalCount.text();
@@ -130,11 +125,11 @@ public class Scraper {
 	 * 
 	 *         Example is: "17-32 of 213,094 results for "Daypack""
 	 */
-	public Integer getItemsCountsPerPage(Document document) {
-		return Integer.valueOf(StringUtils.substringBetween(getSummaryText(document), "-", " "));
+	public Integer getItemsCountsPerPage(String summaryText) {
+		return Integer.valueOf(StringUtils.substringBetween(summaryText, "-", " "));
 	}
 
-	// For example 11/2 should return 6 pages
+	// For example 11/2 should return 6 pages, how many pages for the search result to display
 	public double getTotalPages(int totalPage, int itemsPerPage) {
 		return Math.ceil(totalPage / itemsPerPage);
 	}
@@ -281,7 +276,6 @@ public class Scraper {
 		String str = null;
 		if (ele.select("h5") != null && ele.select("h5").first() != null) {
 			str = ele.select("h5").first().text();
-			// System.out.println("^^^^^^^^" + str);
 			if (str.equals("Sponsored")) {
 				logger.debug("This product is sponsored, so we can ignore it.");
 				return true;
@@ -312,12 +306,13 @@ public class Scraper {
 		if (Scraper.started) {
 			return;
 		}
-
 		scraper.setDocument(this.entryURL);
 		Document document = scraper.getDocument();
-		int totalCountOfItems = scraper.getTotalCountOfItems(scraper.getSummaryText(document));
+		String researchResultText = scraper.getSearchResultSummaryText(document);
+		int totalCountOfItems = scraper.getTotalCountOfItems(researchResultText);
+		int itemsCountsPerPage = scraper.getItemsCountsPerPage(researchResultText);
+		
 		System.out.println(totalCountOfItems);
-		int itemsCountsPerPage = scraper.getItemsCountsPerPage(document);
 		System.out.println(itemsCountsPerPage);
 		List<ProductItem> totalProducts = scraper.getItemsPerPage(document);
 		scraper.nextURL = scraper.getNextPage(document);

@@ -144,8 +144,13 @@ public class ProductItem {
 	 */
 	public void setReviewNumber(Document pageDocument) {
 		String reviewNumStrs = pageDocument.select("a:contains(customer reviews)").first().text();
-		this.reviewNumber = Integer
-				.parseInt(StringUtils.substringBetween(reviewNumStrs, "", " cus").trim().replaceAll(",", ""));
+		String reviewNumber = StringUtils.substringBetween(reviewNumStrs, "", " cus").trim().replaceAll(",", "");
+		
+		if (! "".equals(reviewNumber) ) {
+			this.reviewNumber = Integer.parseInt(reviewNumber);
+		} else {
+			logger.error("no review number found for url: " + this.productURL);
+		}
 	}
 
 	public int getReviewNumber() {
