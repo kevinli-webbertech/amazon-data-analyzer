@@ -3,6 +3,7 @@ package com.webbertech.amz;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration2.Configuration;
 import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -54,16 +55,15 @@ public class Scraper {
 	 
     public  void init() {
     	Configurations configs = new Configurations();
-    	try
-    	{
-    	    Configuration config = configs.properties(new File("IntelliCrawler"));
+    	    try {
+				Configuration config = configs.properties(new File("IntelliCrawler"));
+			} catch (ConfigurationException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
     	    // access configuration properties
     	
-    	}
-    	catch (ConfigurationException cex)
-    	{
-    	    // Something went wrong
-    	}
+    
     }
      
 
