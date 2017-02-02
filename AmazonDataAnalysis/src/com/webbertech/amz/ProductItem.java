@@ -75,10 +75,7 @@ public class ProductItem {
 	 */
 	public void setPageDocument(String url) {
 		try {
-			this.pageDocument = Jsoup.connect(url)
-					.userAgent("Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
-							+ "Chrome/19.0.1042.0 Safari/535.21")
-					.timeout(10000).get();
+			this.pageDocument = Jsoup.connect(url).userAgent(ScraperUtility.CONNECT_ATTR).timeout(10000).get();
 		} catch (IOException e) {
 			logger.error("error in connecting to the URL" + e.getMessage());
 		}

@@ -6,7 +6,15 @@ import org.jsoup.select.Elements;
 
   public class ScraperUtility {
 	public static Logger logger = Logger.getLogger(ScraperUtility.class);
-		
+	public static String CONNECT_ATTR = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
+			+ "Chrome/19.0.1042.0 Safari/535.21" ;
+	/*
+	 * String msg is 'Error in ** ', extMsg is URL, or other stuff
+	 * */
+	public String formatString(String msg, String extMsg) {
+		return msg + "in: " + extMsg;
+	}
+	
 	// ele is <li> tag for instance
 	/* TODO: refactor this */
 	public static boolean isSponsoredProduct(Element ele) {
@@ -31,7 +39,6 @@ import org.jsoup.select.Elements;
 		}
 	}
 	
-
 	//TODO complete this if needed
 	public static void printElements(Elements elements) {
 		for (int i = 0; i < elements.size(); i++) {
@@ -39,5 +46,4 @@ import org.jsoup.select.Elements;
 			//getURL(item);
 		}
 	}
-
 }
