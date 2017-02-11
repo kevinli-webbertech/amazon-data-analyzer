@@ -1,9 +1,6 @@
 package com.webbertech.amz;
 
-import org.apache.commons.configuration.PropertiesConfiguration;
-import org.apache.commons.configuration2.Configuration;
-import org.apache.commons.configuration2.builder.fluent.Configurations;
-import org.apache.commons.configuration2.ex.ConfigurationException;
+
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -14,7 +11,7 @@ import java.util.List;
 import java.io.*;
 import java.time.LocalDateTime;
 import org.apache.log4j.Logger;
-import org.apache.commons.configuration.*;
+
 
 /**
  * This is an amazon scraper, the problem is that, we are going to do the
@@ -47,28 +44,8 @@ public class Scraper {
 	public String nextURL = null;
 	public static Logger logger = Logger.getLogger(Scraper.class);
     final static boolean started = false;
-	private PropertiesConfiguration config = null;
-	
-	/*TODO load property file
-		 http://www.programcreek.com/java-api-examples/org.apache.commons.configuration.PropertiesConfiguration
-	*/
-	 
-    public  void init() {
-    	Configurations configs = new Configurations();
-    	    try {
-				Configuration config = configs.properties(new File("IntelliCrawler"));
-			} catch (ConfigurationException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-    	    // access configuration properties
-    	
-    
-    }
-     
 
 	private Scraper() {
-		init();
 	}
 
 	public static Scraper getInstance() {

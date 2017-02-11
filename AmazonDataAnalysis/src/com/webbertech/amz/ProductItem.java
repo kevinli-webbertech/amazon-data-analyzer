@@ -186,26 +186,15 @@ public class ProductItem {
 	
 		Elements bsrElements = pageDocument.select("li#SalesRank");
 		
-		//TODO iterate through all the elements to get all the categories and its rankings.
-		
-		/*
-		 * <li id="SalesRank"> <b>Amazon Best Sellers Rank:</b> #222 in Sports &amp; Outdoors (<a href="https://www.amazon.com/gp/bestsellers/sporting-goods/ref=pd_dp_ts_sg_1">See Top 100 in Sports &amp; Outdoors</a>) 
-		 *  <style type="text/css">
-			.zg_hrsr { margin: 0; padding: 0; list-style-type: none; }
-			.zg_hrsr_item { margin: 0 0 0 10px; }
-			.zg_hrsr_rank { display: inline-block; width: 80px; text-align: right; }
-			</style> 
- 			<ul class="zg_hrsr"> 
-  				<li class="zg_hrsr_item"> <span class="zg_hrsr_rank">#3</span> <span class="zg_hrsr_ladder">in&nbsp;
-  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/ref=pd_zg_hrsr_sg_1_1">Sports &amp; Outdoors</a> &gt; 
-  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/706814011/ref=pd_zg_hrsr_sg_1_2">Outdoor Recreation</a> &gt; 
-  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/3400371/ref=pd_zg_hrsr_sg_1_3">Camping &amp; Hiking</a> &gt; 
-  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/3400391/ref=pd_zg_hrsr_sg_1_4">Backpacks &amp; Bags</a> &gt; 
-  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/10208054011/ref=pd_zg_hrsr_sg_1_5">Backpacking Packs</a> &gt; <b>
-  				    <a href="https://www.amazon.com/gp/bestsellers/sporting-goods/3400471/ref=pd_zg_hrsr_sg_1_6_last">Hiking Daypacks</a></b></span> 
-  				</li> 
- 			</ul> 
- 		   </li>
+		/* ##Bug to fix
+		 * 
+		 *   <!--
+        To discuss automated access to Amazon data please contact api-services-support@amazon.com.
+        For information about migrating to our APIs refer to our Marketplace APIs at https://developer.amazonservices.com/ref=rm_c_sv, or our Product Advertising API at https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html/ref=rm_c_ac for advertising use cases.
+			--> 
+		 * 
+		 *  20:16:31,441 [ main ] [ WARN ]:124 - https://www.amazon.com/Outlander-Packable-Lightweight-Backpack-Daypack/dp/B0092ECRLA/ref=sr_1_3/155-1123567-9848723?ie=UTF8&qid=1486775748&sr=8-3&keywords=daypack no rating element error
+  20:16:31,444 [ main ] [ ERROR ]:238 - Best seller rank not found. Url is:https://www.amazon.com/Outlander-Packable-Lightweight-Backpack-Daypack/dp/B0092ECRLA/ref=sr_1_3/155-1123567-9848723?ie=UTF8&qid=1486775748&sr=8-3&keywords=daypack
 		 * */
 		
 		//Need to find a URL that has two sales rank

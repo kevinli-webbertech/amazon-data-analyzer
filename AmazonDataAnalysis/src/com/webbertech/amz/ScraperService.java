@@ -1,4 +1,6 @@
 package com.webbertech.amz;
+
+import org.apache.commons.configuration2.Configuration;
 import org.apache.log4j.PropertyConfigurator;
 
 /*
@@ -6,18 +8,17 @@ import org.apache.log4j.PropertyConfigurator;
  * */
 public class ScraperService {
 	private Scraper scraper;
+	private Configuration config;
 
 	public ScraperService() {
 		PropertyConfigurator.configure("log4j.properties");
-	}
-	
-	public ScraperService(String entryURL) {
-	   this();
-	   scraper = Scraper.getInstance();
-	   scraper.setEntryURL(entryURL);
+		config = ScraperConfigurator.getInstance().getConfigurator();
+		String entryURL = config.getString("entry.url");
+		scraper = Scraper.getInstance();
+		scraper.setEntryURL(entryURL);
 	}
 
-	public void startLoggingService() throws Exception {
+	public void startCrawlingService() throws Exception {
 		if (scraper == null) {
 			throw new Exception("scrapper object is null");
 		} else if ("".equals(scraper.getEntryURL())) {
