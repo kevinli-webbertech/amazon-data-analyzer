@@ -25,5 +25,4 @@ public class BestSellerRank {
 		Category = category;
 		this.bsrValue = bsrValue;
 	}
-
 }

@@ -1,5 +1,6 @@
 package com.webbertech.amz;
 
+
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -10,6 +11,7 @@ import java.util.List;
 import java.io.*;
 import java.time.LocalDateTime;
 import org.apache.log4j.Logger;
+
 
 /**
  * This is an amazon scraper, the problem is that, we are going to do the
@@ -38,13 +40,10 @@ import org.apache.log4j.Logger;
 
 public class Scraper {
 	public Document document;
-	private static Scraper scraper = new Scraper();
+	private final static Scraper scraper = new Scraper();
 	public String nextURL = null;
 	public static Logger logger = Logger.getLogger(Scraper.class);
-    private final static String CONNECT_ATTR = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
-			+ "Chrome/19.0.1042.0 Safari/535.21" ;
-	
-	final static boolean started = false;
+    final static boolean started = false;
 
 	private Scraper() {
 	}
@@ -75,7 +74,7 @@ public class Scraper {
 	 */
 	public Document setDocument(String url) {
 		try {
-			document = Jsoup.connect(url).userAgent(CONNECT_ATTR).timeout(10000).get();
+			document = Jsoup.connect(url).userAgent(ScraperUtility.CONNECT_ATTR).timeout(10000).get();
 		} catch (IOException e) {
 			logger.error("Error in connecting to url: " + url + " at " + LocalDateTime.now() + e.getMessage()+"\n");
 		}
@@ -268,9 +267,12 @@ public class Scraper {
 	}
 
 	// Prevent multithread to start it twice.
-	synchronized public void start() {
+	synchronized public void start() throws Exception {
 		if (Scraper.started) {
 			return;
+		}
+		if ("".equals(this.getEntryURL())) {
+			throw new Exception("No entry URL is set");
 		}
 		scraper.setDocument(this.entryURL);
 		Document document = scraper.getDocument();
