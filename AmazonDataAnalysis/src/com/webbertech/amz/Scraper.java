@@ -1,6 +1,5 @@
 package com.webbertech.amz;
 
-
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -13,21 +12,15 @@ import java.io.*;
 import java.time.LocalDateTime;
 import org.apache.log4j.Logger;
 
-
 /**
  * This is an amazon scraper, the problem is that, we are going to do the
  * pagination of amazon searched items, and pull each page to collect the data
  * we want.
  * 
- * Problem:
+ * Issues:
  * 
- * Due to the network response time and request scraping of a large number of
- * pages, it results in a huge number of computation. The total number of the
- * searched item is always changing, so before we iterate through all the pages,
- * the total number of pages might change.
- * 
- * Solution: distributing the computing by using multiple machines to do the
- * data collection and merge the result back from ASCII file.
+ * 1. Large network IO response time, a distributed architecture will be needed.
+ * 2. Amazon has a good team to anti-scraping, certain actions have to be used to address this.
  * 
  * Jsoup lib:
  * 
@@ -36,7 +29,8 @@ import org.apache.log4j.Logger;
  * 
  * For example, div.xx and div#xx syntax.
  * 
- * @author xiaofeng li xlics05@gmail.com
+ * @author xiaofeng li
+ *         xlics05@gmail.com
  */
 
 public class Scraper {
@@ -46,7 +40,6 @@ public class Scraper {
 	private static Logger logger = Logger.getLogger(Scraper.class);
     private final static boolean started = false;
 	
-    
     private Document currentDocument;  // Document object from each URL that list a few dozen of products
 	private float filterRatio; // Usually it is 5%, read from config file
 	private boolean randomReading; //Read from config file
@@ -346,7 +339,6 @@ public class Scraper {
 		System.out.println("summary text is:" + searchResultSummaryText);
 		System.out.println(totalCountOfItems);
 		System.out.println(itemsCountPerPage);
-		
 		scraper.addItemsPerPageToStore(currentDocument, store);
 		scraper.setNextPageURL(currentDocument);
 		scraper.nextURL = scraper.getNextPageURL();
@@ -362,5 +354,4 @@ public class Scraper {
 		 * totalProducts.size() + "******"); }
 		 */
 	}
-
 }
