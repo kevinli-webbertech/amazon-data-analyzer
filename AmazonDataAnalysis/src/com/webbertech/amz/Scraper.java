@@ -39,20 +39,25 @@ import org.apache.log4j.Logger;
  */
 
 public class Scraper {
-	public Document document;
+	
+	// Vars used for control the scrapper
 	private final static Scraper scraper = new Scraper();
-	public String nextURL = null;
-	public static Logger logger = Logger.getLogger(Scraper.class);
-    final static boolean started = false;
-
+	private static Logger logger = Logger.getLogger(Scraper.class);
+    private final static boolean started = false;
+	
+    
+    private Document currentDocument;  // Document object from each URL that list a few dozen of products
+	private float filterRatio; //usually it is 5%
+    
+	private String entryURL;      // This is read from config file, nextURL is inferred from this var
+    private String nextURL = null;
+	
 	private Scraper() {
 	}
 
 	public static Scraper getInstance() {
 		return scraper;
 	}
-
-	private String entryURL;
 
 	public void setEntryURL(String url) {
 		this.entryURL = url;
@@ -72,13 +77,13 @@ public class Scraper {
 	 * 
 	 * @return
 	 */
-	public Document setDocument(String url) {
+	public Document setCurrentDocument(String url) {
 		try {
-			document = Jsoup.connect(url).userAgent(ScraperUtility.CONNECT_ATTR).timeout(10000).get();
+			currentDocument = Jsoup.connect(url).userAgent(ScraperUtility.CONNECT_ATTR).timeout(10000).get();
 		} catch (IOException e) {
 			logger.error("Error in connecting to url: " + url + " at " + LocalDateTime.now() + e.getMessage()+"\n");
 		}
-		return document;
+		return currentDocument;
 	}
 	
 	/**
@@ -88,21 +93,50 @@ public class Scraper {
 	 *         can reuse the document object as the connect(url) operation is
 	 *         costly.
 	 */
-	public Document getDocument() {
-		return document;
+	public Document getCurrentDocument() {
+		return currentDocument;
 	}
 
+	
+	public void setFilterRatio(float filterRatio) {
+		this.filterRatio = filterRatio;
+	}
+	
+	public float getFilterRatio() {
+		return this.filterRatio;
+	}
+	
+	
+	//TODO but first need to to fix all the functions names
+	//rankThreshold = totalProducts * filterRatio
+	private int rankThreshold;
+	public int setRankThreshold() {
+		// TODO need to rename a lot of the methods and make them from get to set
+		// this.rankThreshold = Math.round(this.filterRatio * this.g**)
+		return 0;
+	}
+	
+	public int getRankThreshold() {
+		return this.rankThreshold;
+	}
+	
 	/*
 	 * TODO what is the better name to replace the Summary? 
 	 * It is the string on
 	 * top of each product search page such as:
 	 * "17-32 of 213,094 results for "Daypack""
 	 */
-	public String getSearchResultSummaryText(Document document) {
+	private String searchResultSummaryText;
+	
+	public void setSearchResultSummaryText(Document document) {
 		Element totalCount = document.select("div.s-first-column").first();
-		return totalCount.text();
+		this.searchResultSummaryText = totalCount.text();
 	}
 
+	public String getSearchResultSummaryText() {
+		return this.searchResultSummaryText;
+	}
+	
 	/**
 	 * @return total number of searched items Example is: "17-32 of 213,094
 	 *         results for "Daypack""
@@ -114,24 +148,41 @@ public class Scraper {
 	 *         inspector, and this is subject to change. Make this a
 	 *         configurable constant.
 	 */
-	public Integer getTotalCountOfItems(String summaryText) {
-		return Integer.valueOf(StringUtils.substringBetween(summaryText, "of", "results").trim().replaceAll(",+", ""));
+	private int totalCountOfItems;
+	public void setTotalCountOfItems(String summaryText) {
+		this.totalCountOfItems = Integer.valueOf(StringUtils.substringBetween(summaryText, "of", "results").trim().replaceAll(",+", ""));
 	}
 
+	public int getTotalCountOfItems() {
+		return this.getTotalCountOfItems();
+	}
+	
 	/**
 	 * @return number of items that will be shown in each page
 	 * 
 	 *         Example is: "17-32 of 213,094 results for "Daypack""
 	 */
-	public Integer getItemsCountsPerPage(String summaryText) {
-		return Integer.valueOf(StringUtils.substringBetween(summaryText, "-", " "));
+	private Integer itemCountPerPage;
+	public void setItemsCountPerPage(String summaryText) {
+		this.itemCountPerPage = Integer.valueOf(StringUtils.substringBetween(summaryText, "-", " "));
 	}
+	
+ 	public int getItemCountPerPage () {
+ 		return this.itemCountPerPage;
+ 	}
 
 	// For example 11/2 should return 6 pages, how many pages for the search result to display
-	public double getTotalPages(int totalPage, int itemsPerPage) {
-		return Math.ceil(totalPage / itemsPerPage);
+    private double totalPagesCount;
+	public void setTotalPagesCount(int totalPage, int itemsPerPage) {
+		this.totalPagesCount = Math.ceil(totalPage / itemsPerPage);
 	}
 
+	public double getTotalPagesCount() {
+		return this.totalPagesCount;
+	}
+	
+	
+	//TODO rename this method, and introduce the new flags to control the random thing for testing
 	/**
 	 * @return a list of product item in each page To parse the dom using jsoup,
 	 *         the div.xxx, div#xxx . is used for class and # is for id. In each
@@ -210,7 +261,7 @@ public class Scraper {
 	 *            <li></li> tag
 	 * @return a string of url
 	 */
-	public String getURL(Element ele) {
+	public String getCurrentPageURL(Element ele) {
 		/*
 		 * I've this HTML code:
 		 * 
@@ -259,13 +310,17 @@ public class Scraper {
 	}
 
 
-	public String getNextPage(Element ele) {
-		Element nextPageEles = document.getElementById("centerBelowMinus").getElementsByClass("pagnLink").first()
+	public void setNextPageURL(Element curDocument) {
+		Element nextPageEles = curDocument.getElementById("centerBelowMinus").getElementsByClass("pagnLink").first()
 				.child(0);
-		String nextPageLink = "Amazon.com" + nextPageEles.attr("href");
-		return nextPageLink;
+		this.nextURL = "Amazon.com" + nextPageEles.attr("href");
+	
 	}
 
+	public String getNextPageURL() {
+		return this.nextURL;
+	}
+	
 	// Prevent multithread to start it twice.
 	synchronized public void start() throws Exception {
 		if (Scraper.started) {
@@ -274,21 +329,23 @@ public class Scraper {
 		if ("".equals(this.getEntryURL())) {
 			throw new Exception("No entry URL is set");
 		}
-		scraper.setDocument(this.entryURL);
-		Document document = scraper.getDocument();
-		String researchResultText = scraper.getSearchResultSummaryText(document);
-		int totalCountOfItems = scraper.getTotalCountOfItems(researchResultText);
-		int itemsCountsPerPage = scraper.getItemsCountsPerPage(researchResultText);
+		scraper.setCurrentDocument(this.getEntryURL());
+		Document currentDocument = scraper.getCurrentDocument();
+		scraper.setSearchResultSummaryText(currentDocument);
+		String searchResultSummaryText = scraper.getSearchResultSummaryText();
+		scraper.setItemsCountPerPage(searchResultSummaryText);
+		scraper.setTotalCountOfItems(searchResultSummaryText);
+		int totalCountOfItems = scraper.getTotalCountOfItems();
+		int itemsCountPerPage = scraper.getItemCountPerPage();
 		
 		//TODO the following lines will be commented out once it is done
-		System.out.println("summary text is:" + researchResultText);
+		System.out.println("summary text is:" + searchResultSummaryText);
 		System.out.println(totalCountOfItems);
-		System.out.println(itemsCountsPerPage);
+		System.out.println(itemsCountPerPage);
 		
-		
-		List<ProductItem> totalProducts = scraper.getItemsPerPage(document);
-		scraper.nextURL = scraper.getNextPage(document);
- 
+		List<ProductItem> totalProducts = scraper.getItemsPerPage(currentDocument);
+		scraper.setNextPageURL(currentDocument);
+		scraper.nextURL = scraper.getNextPageURL();
 		// TODO uncomment these lines, now for debugging, we only
 		// do one page interations.
 		/*

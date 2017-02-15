@@ -4,7 +4,11 @@ import org.apache.log4j.Logger;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-  public class ScraperUtility {
+/*
+ * A repo class that were put a lot of commonly used methods that does not fit into 
+ * other objects.
+ * */
+public class ScraperUtility {
 	public static Logger logger = Logger.getLogger(ScraperUtility.class);
 	public static String CONNECT_ATTR = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/535.21 (KHTML, like Gecko) "
 			+ "Chrome/19.0.1042.0 Safari/535.21" ;
