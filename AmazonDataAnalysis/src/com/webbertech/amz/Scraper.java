@@ -7,6 +7,7 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.io.*;
 import java.time.LocalDateTime;
@@ -47,24 +48,48 @@ public class Scraper {
 	
     
     private Document currentDocument;  // Document object from each URL that list a few dozen of products
-	private float filterRatio; //usually it is 5%
-    
-	private String entryURL;      // This is read from config file, nextURL is inferred from this var
-    private String nextURL = null;
+	private float filterRatio; // Usually it is 5%, read from config file
+	private boolean randomReading; //Read from config file
+	private boolean randomSleeping; //Read from config file
 	
+	private int rankThreshold; // Calculated from filterRatio
+	private String searchResultSummaryText; //Regex catch
+	private int totalCountOfItems; //Regex catch
+	private Integer itemCountPerPage; //Regex catch
+	private double totalPagesCount; //Calculated based on above info
+	
+	private String entryURL;      // This is read from config file, nextURL is inferred from this var
+    private String nextURL = null; // Now is calculated from the current document source and it is sequential order
+                                    // literally the next page url.
+	
+    private List<ProductItem> store; 
+    
 	private Scraper() {
+		store = new ArrayList<>();
 	}
 
 	public static Scraper getInstance() {
 		return scraper;
 	}
 
+	public List<ProductItem> getStore() {
+	   return store;	
+	}
+	
 	public void setEntryURL(String url) {
 		this.entryURL = url;
 	}
 
 	public String getEntryURL() {
 		return this.entryURL;
+	}
+	
+	public void setRandomReading(boolean randomReading) {
+	    this.randomReading = randomReading;
+	}
+
+	public void setRandomSleeping(boolean randomSleeping) {
+		this.randomSleeping = randomSleeping;	
 	}
 
 	/**
@@ -97,7 +122,6 @@ public class Scraper {
 		return currentDocument;
 	}
 
-	
 	public void setFilterRatio(float filterRatio) {
 		this.filterRatio = filterRatio;
 	}
@@ -106,10 +130,7 @@ public class Scraper {
 		return this.filterRatio;
 	}
 	
-	
-	//TODO but first need to to fix all the functions names
-	//rankThreshold = totalProducts * filterRatio
-	private int rankThreshold;
+    //rankThreshold = totalProducts * filterRatio
 	public int setRankThreshold() {
 		// TODO need to rename a lot of the methods and make them from get to set
 		// this.rankThreshold = Math.round(this.filterRatio * this.g**)
@@ -126,8 +147,6 @@ public class Scraper {
 	 * top of each product search page such as:
 	 * "17-32 of 213,094 results for "Daypack""
 	 */
-	private String searchResultSummaryText;
-	
 	public void setSearchResultSummaryText(Document document) {
 		Element totalCount = document.select("div.s-first-column").first();
 		this.searchResultSummaryText = totalCount.text();
@@ -148,7 +167,6 @@ public class Scraper {
 	 *         inspector, and this is subject to change. Make this a
 	 *         configurable constant.
 	 */
-	private int totalCountOfItems;
 	public void setTotalCountOfItems(String summaryText) {
 		this.totalCountOfItems = Integer.valueOf(StringUtils.substringBetween(summaryText, "of", "results").trim().replaceAll(",+", ""));
 	}
@@ -162,7 +180,6 @@ public class Scraper {
 	 * 
 	 *         Example is: "17-32 of 213,094 results for "Daypack""
 	 */
-	private Integer itemCountPerPage;
 	public void setItemsCountPerPage(String summaryText) {
 		this.itemCountPerPage = Integer.valueOf(StringUtils.substringBetween(summaryText, "-", " "));
 	}
@@ -172,15 +189,13 @@ public class Scraper {
  	}
 
 	// For example 11/2 should return 6 pages, how many pages for the search result to display
-    private double totalPagesCount;
-	public void setTotalPagesCount(int totalPage, int itemsPerPage) {
+    public void setTotalPagesCount(int totalPage, int itemsPerPage) {
 		this.totalPagesCount = Math.ceil(totalPage / itemsPerPage);
 	}
 
 	public double getTotalPagesCount() {
 		return this.totalPagesCount;
 	}
-	
 	
 	//TODO rename this method, and introduce the new flags to control the random thing for testing
 	/**
@@ -194,8 +209,7 @@ public class Scraper {
 	 *         good ones, others a sponsored links, which we need to filtered
 	 *         them out.
 	 */
-	public List<ProductItem> getItemsPerPage(Document document) {
-		List<ProductItem> products = new ArrayList<>();
+	public void addItemsPerPageToStore(Document curDocument, List<ProductItem> store) {
 		/*
 		 * In the web browser inspector, we rely on the data-* attribute to find
 		 * out the patterns
@@ -203,27 +217,23 @@ public class Scraper {
 		 * <li id="result_0" data-asin="B01IFVL7VG"
 		 * class="s-result-item celwidget">
 		 */
-		Elements productLists = document.select("li[^data-]");
+		Elements productLists = curDocument.select("li[^data-]");
 
-		//TODO need to shuffle this Elements array, and do not iterate in the normal order
-		//TODO need to make a flag to turn this feature on and off, make a class called ScraperProperty.java and read param from a property file
-		
-		//Turn this on when the flag is possible, and when I finish the bsr implementation
-		//Collections.shuffle(middleColumn);
+		//Shuffle this Elements array, and do not iterate in the normal order
+		if (randomReading) {
+			Collections.shuffle(productLists);
+		}
 		
 		for (int i = 0; i < productLists.size(); i++) {
-			
-			/*Turn this on if the ip is still banned, it will greatly slow down the single thread though.
-			 * Generate a random number between 1-3 secs
-			
-			
-			long rand = (int)(Math.random()*2)+1;
-			try {
-				Thread.sleep(rand);
-			} catch (InterruptedException e) {
-				logger.error(e.getMessage());
+			// Generate a random number between 1-3 secs, switch it in the config file
+			if (randomSleeping) {
+				long rand = (int)(Math.random()*2)+1;
+				try {
+					Thread.sleep(rand);
+				} catch (InterruptedException e) {
+					logger.error(e.getMessage());
+				}
 			}
-			*/
 			
 			//TODO missing URL to explain this if logics
 			Element ele = productLists.get(i);
@@ -248,11 +258,9 @@ public class Scraper {
 				System.out.println("Rating: " + product.getRating());
 				System.out.println("ReviewNumber: " + product.getReviewNumber());
 				System.out.println("******End of a Product******" + "\n");
-				
-				products.add(product);
+				store.add(product);
 			}
 		}
-		return products;
 	}
 
 	/**
@@ -279,7 +287,6 @@ public class Scraper {
 		 * element link = doc.select("td.topic.starter > a"); String url =
 		 * link.attr("href");
 		 */
-
 		Element link = ele.select("a").first();
 		// this link 's ChildNode has all the images I need, could be sperated
 		// with a comma and store in a String type.
@@ -301,7 +308,6 @@ public class Scraper {
 			url = java.net.URLDecoder.decode(link.attr("abs:href"), "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			logger.error("Error happens in decoding URL of hyperlink object: " + link + " " + e.getMessage());
-
 		}
 		String title = link.text();
 		System.out.println("URL is: " + url);
@@ -309,12 +315,10 @@ public class Scraper {
 		return url;
 	}
 
-
 	public void setNextPageURL(Element curDocument) {
 		Element nextPageEles = curDocument.getElementById("centerBelowMinus").getElementsByClass("pagnLink").first()
 				.child(0);
 		this.nextURL = "Amazon.com" + nextPageEles.attr("href");
-	
 	}
 
 	public String getNextPageURL() {
@@ -343,11 +347,12 @@ public class Scraper {
 		System.out.println(totalCountOfItems);
 		System.out.println(itemsCountPerPage);
 		
-		List<ProductItem> totalProducts = scraper.getItemsPerPage(currentDocument);
+		scraper.addItemsPerPageToStore(currentDocument, store);
 		scraper.setNextPageURL(currentDocument);
 		scraper.nextURL = scraper.getNextPageURL();
-		// TODO uncomment these lines, now for debugging, we only
-		// do one page interations.
+		List<ProductItem> totalProducts = scraper.getStore();
+		
+		// TODO uncomment these lines, now for debugging, we only do one page interations.
 		/*
 		 * for(int i=1; i<3;
 		 * //Math.ceil(totalCountOfItems/itemsCountsPerPage)-1; i++) {
@@ -357,4 +362,5 @@ public class Scraper {
 		 * totalProducts.size() + "******"); }
 		 */
 	}
+
 }
