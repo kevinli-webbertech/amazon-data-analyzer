@@ -43,11 +43,11 @@ public class ScraperUtility {
 		}
 	}
 	
-	//TODO complete this if needed
-	public static void printElements(Elements elements) {
-		for (int i = 0; i < elements.size(); i++) {
-			Element item = elements.get(i);
-			//getURL(item);
-		}
+	//A quick verbose display to std out
+	public static void printElements(Scraper s) {
+				System.out.println("summary text is:" + s.getSearchResultSummaryText());
+				System.out.println(s.getTotalCountOfItems());
+				System.out.println(s.getItemCountPerPage());
+			//	System.out.println(s.getNextPageURL());
 	}
 }
