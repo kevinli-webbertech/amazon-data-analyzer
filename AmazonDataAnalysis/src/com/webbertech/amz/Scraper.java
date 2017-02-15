@@ -57,6 +57,14 @@ public class Scraper {
 	
     private List<ProductItem> store; 
     
+    /*
+     * The following two files are the data I would be interested currently,
+     * and they are pretty raw data for further review to see what other 
+     * intelligent things we need to derive.
+     * */
+    private File recordFile;  // A file that records product URL that is above the threshold I am interested
+    private File multipleBSRRecord;  // A file that only records product URL that is above threshold and have more than one bsrs.
+    
 	private Scraper() {
 		store = new ArrayList<>();
 	}
@@ -243,6 +251,12 @@ public class Scraper {
 				product.setBsr(product.getPageDocument());
 				product.setReviewNumber(product.getPageDocument());
 				product.setImageURLs(product.getPageDocument());
+				
+				
+				List<BestSellerRank> bsrList = product.getBsr();
+				if (bsrList.size()>1) {
+					
+				}
 				
 				//the following are for testing
 				System.out.println("Product URL:" + product.getProductURL());
