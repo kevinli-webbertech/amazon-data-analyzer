@@ -3,7 +3,7 @@ import org.junit.*;
 public class ScaperTest {
 	
 	@Before
-	public void setUp() {}
+	public void init() {}
 	
 	@Test
 	public void testSingleton() {}

@@ -7,7 +7,9 @@ import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
 import org.apache.commons.configuration2.builder.fluent.Parameters;
 import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.apache.log4j.Logger;
-
+/**
+ * Configure the property file for the software.
+ * */
 public class ScraperConfigurator {
 	private Configuration config;
 

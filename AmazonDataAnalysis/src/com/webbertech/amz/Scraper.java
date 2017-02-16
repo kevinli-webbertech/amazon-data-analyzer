@@ -1,32 +1,26 @@
 package com.webbertech.amz;
 
-
 import org.apache.commons.lang3.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.io.*;
 import java.time.LocalDateTime;
 import org.apache.log4j.Logger;
-
 
 /**
  * This is an amazon scraper, the problem is that, we are going to do the
  * pagination of amazon searched items, and pull each page to collect the data
  * we want.
  * 
- * Problem:
+ * Issues:
  * 
- * Due to the network response time and request scraping of a large number of
- * pages, it results in a huge number of computation. The total number of the
- * searched item is always changing, so before we iterate through all the pages,
- * the total number of pages might change.
- * 
- * Solution: distributing the computing by using multiple machines to do the
- * data collection and merge the result back from ASCII file.
+ * 1. Large network IO response time, a distributed architecture will be needed.
+ * 2. Amazon has a good team to anti-scraping, certain actions have to be used to address this.
  * 
  * Jsoup lib:
  * 
@@ -35,25 +29,54 @@ import org.apache.log4j.Logger;
  * 
  * For example, div.xx and div#xx syntax.
  * 
- * @author xiaofeng li xlics05@gmail.com
+ * @author xiaofeng li
+ *         xlics05@gmail.com
  */
 
 public class Scraper {
-	public Document document;
+	
+	// Vars used for control the scrapper
 	private final static Scraper scraper = new Scraper();
-	public String nextURL = null;
-	public static Logger logger = Logger.getLogger(Scraper.class);
-    final static boolean started = false;
-
-	private Scraper() {
+	private static Logger logger = Logger.getLogger(Scraper.class);
+    private final static boolean started = false;
+	
+    private Document currentDocument;  // Document object from each URL that list a few dozen of products
+	private float filterRatio; // Usually it is 5%, read from config file
+	private boolean randomReading; //Read from config file
+	private boolean randomSleeping; //Read from config file
+	
+	private int rankThreshold; // Calculated from filterRatio
+	private String searchResultSummaryText; //Regex catch
+	private int totalCountOfItems; //Regex catch
+	private Integer itemCountPerPage; //Regex catch
+	private double totalPagesCount; //Calculated based on above info
+	
+	private String entryURL;      // This is read from config file, nextURL is inferred from this var
+    private String nextURL = null; // Now is calculated from the current document source and it is sequential order
+                                    // literally the next page url.
+	
+    private List<ProductItem> store; 
+    
+    /*
+     * The following two files are the data I would be interested currently,
+     * and they are pretty raw data for further review to see what other 
+     * intelligent things we need to derive.
+     * */
+    private File recordFile;  // A file that records product URL that is above the threshold I am interested
+    
+    private Scraper() {
+		this.store = new ArrayList<>();
+		this.recordFile = new File("record.txt");
 	}
 
 	public static Scraper getInstance() {
 		return scraper;
 	}
 
-	private String entryURL;
-
+	public List<ProductItem> getStore() {
+	   return store;	
+	}
+	
 	public void setEntryURL(String url) {
 		this.entryURL = url;
 	}
@@ -61,7 +84,19 @@ public class Scraper {
 	public String getEntryURL() {
 		return this.entryURL;
 	}
+	
+	public void setRandomReading(boolean randomReading) {
+	    this.randomReading = randomReading;
+	}
 
+	public void setRandomSleeping(boolean randomSleeping) {
+		this.randomSleeping = randomSleeping;	
+	}
+
+	public File getRecordFile() {
+		return this.recordFile;
+	}
+	
 	/**
 	 * This is compulsory to run otherwise the Document object will be null.
 	 * 
@@ -72,13 +107,13 @@ public class Scraper {
 	 * 
 	 * @return
 	 */
-	public Document setDocument(String url) {
+	public Document setCurrentDocument(String url) {
 		try {
-			document = Jsoup.connect(url).userAgent(ScraperUtility.CONNECT_ATTR).timeout(10000).get();
+			currentDocument = Jsoup.connect(url).userAgent(ScraperUtility.CONNECT_ATTR).timeout(10000).get();
 		} catch (IOException e) {
 			logger.error("Error in connecting to url: " + url + " at " + LocalDateTime.now() + e.getMessage()+"\n");
 		}
-		return document;
+		return currentDocument;
 	}
 	
 	/**
@@ -88,21 +123,166 @@ public class Scraper {
 	 *         can reuse the document object as the connect(url) operation is
 	 *         costly.
 	 */
-	public Document getDocument() {
-		return document;
+	public Document getCurrentDocument() {
+		return currentDocument;
 	}
 
+	public void setFilterRatio(float filterRatio) {
+		this.filterRatio = filterRatio;
+	}
+	
+	public float getFilterRatio() {
+		return this.filterRatio;
+	}
+	
+    //rankThreshold = totalProducts * filterRatio
+	public int setRankThreshold() {
+		// TODO need to rename a lot of the methods and make them from get to set
+		// this.rankThreshold = Math.round(this.filterRatio * this.g**)
+		return 0;
+	}
+	
+	public int getRankThreshold() {
+		return this.rankThreshold;
+	}
+	
 	/*
 	 * TODO what is the better name to replace the Summary? 
 	 * It is the string on
 	 * top of each product search page such as:
 	 * "17-32 of 213,094 results for "Daypack""
 	 */
-	public String getSearchResultSummaryText(Document document) {
+	public void setSearchResultSummaryText(Document document) {
 		Element totalCount = document.select("div.s-first-column").first();
-		return totalCount.text();
+		
+		//TODO check totalCount is null, once it is null it is probably banned
+		/*
+		 * <!doctype html>
+<!--[if lt IE 7]> <html lang="en-us" class="a-no-js a-lt-ie9 a-lt-ie8 a-lt-ie7"> <![endif]-->
+<!--[if IE 7]>    <html lang="en-us" class="a-no-js a-lt-ie9 a-lt-ie8"> <![endif]-->
+<!--[if IE 8]>    <html lang="en-us" class="a-no-js a-lt-ie9"> <![endif]-->
+<!--[if gt IE 8]><!-->
+<html class="a-no-js" lang="en-us">
+ <!--<![endif]-->
+ <head> 
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8"> 
+  <meta charset="utf-8"> 
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
+  <title dir="ltr">Robot Check</title> 
+  <meta name="viewport" content="width=device-width"> 
+  <link rel="stylesheet" href="https://images-na.ssl-images-amazon.com/images/G/01/AUIClients/AmazonUI-3c913031596ca78a3768f4e934b1cc02ce238101.secure.min._V1_.css"> 
+  <script>
+
+if (true === true) {
+    var ue_t0 = (+ new Date()),
+        ue_csm = window,
+        ue = { t0: ue_t0, d: function() { return (+new Date() - ue_t0); } },
+        ue_furl = "fls-na.amazon.com",
+        ue_mid = "ATVPDKIKX0DER",
+        ue_sid = (document.cookie.match(/session-id=([0-9-]+)/) || [])[1],
+        ue_sn = "opfcaptcha.amazon.com",
+        ue_id = '4SRFEPNJ3RYECWE8CVH0';
+}
+</script> 
+ </head> 
+ <body> 
+  <!--
+        To discuss automated access to Amazon data please contact api-services-support@amazon.com.
+        For information about migrating to our APIs refer to our Marketplace APIs at https://developer.amazonservices.com/ref=rm_c_sv, or our Product Advertising API at https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html/ref=rm_c_ac for advertising use cases.
+--> 
+  <!--
+Correios.DoNotSend
+--> 
+  <div class="a-container a-padding-double-large" style="min-width:350px;padding:44px 0 !important"> 
+   <div class="a-row a-spacing-double-large" style="width: 350px; margin: 0 auto"> 
+    <div class="a-row a-spacing-medium a-text-center">
+     <i class="a-icon a-logo"></i>
+    </div> 
+    <div class="a-box a-alert a-alert-info a-spacing-base"> 
+     <div class="a-box-inner"> 
+      <i class="a-icon a-icon-alert"></i> 
+      <h4>Enter the characters you see below</h4> 
+      <p class="a-last">Sorry, we just need to make sure you're not a robot. For best results, please make sure your browser is accepting cookies.</p> 
+     </div> 
+    </div> 
+    <div class="a-section"> 
+     <div class="a-box a-color-offset-background"> 
+      <div class="a-box-inner a-padding-extra-large"> 
+       <form method="get" action="/errors/validateCaptcha" name=""> 
+        <input type="hidden" name="amzn" value="LGwZ61ShiGBJTXJD8AGYWw==">
+        <input type="hidden" name="amzn-r" value="/s/ref=nb_sb_noss?url=search-alias%3Daps&amp;field-keywords=daypack">
+        <input type="hidden" name="amzn-pt" value="NoPageType"> 
+        <div class="a-row a-spacing-large"> 
+         <div class="a-box"> 
+          <div class="a-box-inner"> 
+           <h4>Type the characters you see in this image:</h4> 
+           <div class="a-row a-text-center"> 
+            <img src="https://images-na.ssl-images-amazon.com/captcha/cdkxpfei/Captcha_rdmqzvywgt.jpg"> 
+           </div> 
+           <div class="a-row a-spacing-base"> 
+            <div class="a-row"> 
+             <div class="a-column a-span6"> 
+             </div> 
+             <div class="a-column a-span6 a-span-last a-text-right"> 
+              <a onclick="window.location.reload()">Try different image</a> 
+             </div> 
+            </div> 
+            <input autocomplete="off" spellcheck="false" placeholder="Type characters" id="captchacharacters" name="field-keywords" class="a-span12" autocapitalize="off" autocorrect="off" type="text"> 
+           </div> 
+          </div> 
+         </div> 
+        </div> 
+        <div class="a-section a-spacing-extra-large"> 
+         <div class="a-row"> 
+          <span class="a-button a-button-primary a-span12"> <span class="a-button-inner"> <button type="submit" class="a-button-text">Continue shopping</button> </span> </span> 
+         </div> 
+        </div> 
+       </form> 
+      </div> 
+     </div> 
+    </div> 
+   </div> 
+   <div class="a-divider a-divider-section">
+    <div class="a-divider-inner"></div>
+   </div> 
+   <div class="a-text-center a-spacing-small a-size-mini"> 
+    <a href="http://www.amazon.com/gp/help/customer/display.html/ref=footer_cou?ie=UTF8&amp;nodeId=508088">Conditions of Use</a> 
+    <span class="a-letter-space"></span> 
+    <span class="a-letter-space"></span> 
+    <span class="a-letter-space"></span> 
+    <span class="a-letter-space"></span> 
+    <a href="http://www.amazon.com/gp/help/customer/display.html/ref=footer_privacy?ie=UTF8&amp;nodeId=468496">Privacy Policy</a> 
+   </div> 
+   <div class="a-text-center a-size-mini a-color-secondary">
+     © 1996-2014, Amazon.com, Inc. or its affiliates 
+    <script>
+           if (true === true) {
+             document.write('<img src="https://fls-na.amaz'+'on.com/'+'1/oc-csi/1/OP/requestId=4SRFEPNJ3RYECWE8CVH0&js=1" />');
+           };
+          </script> 
+    <noscript> 
+     <img src="https://fls-na.amazon.com/1/oc-csi/1/OP/requestId=4SRFEPNJ3RYECWE8CVH0&amp;js=0"> 
+    </noscript> 
+   </div> 
+  </div> 
+  <script>
+    if (true === true) {
+        var elem = document.createElement("script");
+        elem.src = "https://images-na.ssl-images-amazon.com/images/G/01/csminstrumentation/csm-captcha-instrumentation.min._V" + (+ new Date()) + "_.js";
+        document.getElementsByTagName('head')[0].appendChild(elem);
+    }
+    </script>  
+ </body>
+</html>
+		 * 
+		 * */
+		this.searchResultSummaryText = totalCount.text();
 	}
 
+	public String getSearchResultSummaryText() {
+		return this.searchResultSummaryText;
+	}
+	
 	/**
 	 * @return total number of searched items Example is: "17-32 of 213,094
 	 *         results for "Daypack""
@@ -114,24 +294,37 @@ public class Scraper {
 	 *         inspector, and this is subject to change. Make this a
 	 *         configurable constant.
 	 */
-	public Integer getTotalCountOfItems(String summaryText) {
-		return Integer.valueOf(StringUtils.substringBetween(summaryText, "of", "results").trim().replaceAll(",+", ""));
+	public void setTotalCountOfItems(String summaryText) {
+		this.totalCountOfItems = Integer.valueOf(StringUtils.substringBetween(summaryText, "of", "results").trim().replaceAll(",+", ""));
 	}
 
+	public int getTotalCountOfItems() {
+		return this.totalCountOfItems;
+	}
+	
 	/**
 	 * @return number of items that will be shown in each page
 	 * 
 	 *         Example is: "17-32 of 213,094 results for "Daypack""
 	 */
-	public Integer getItemsCountsPerPage(String summaryText) {
-		return Integer.valueOf(StringUtils.substringBetween(summaryText, "-", " "));
+	public void setItemsCountPerPage(String summaryText) {
+		this.itemCountPerPage = Integer.valueOf(StringUtils.substringBetween(summaryText, "-", " "));
 	}
+	
+ 	public int getItemCountPerPage () {
+ 		return this.itemCountPerPage;
+ 	}
 
 	// For example 11/2 should return 6 pages, how many pages for the search result to display
-	public double getTotalPages(int totalPage, int itemsPerPage) {
-		return Math.ceil(totalPage / itemsPerPage);
+    public void setTotalPagesCount(int totalPage, int itemsPerPage) {
+		this.totalPagesCount = Math.ceil(totalPage / itemsPerPage);
 	}
 
+	public double getTotalPagesCount() {
+		return this.totalPagesCount;
+	}
+	
+	//TODO rename this method, and introduce the new flags to control the random thing for testing
 	/**
 	 * @return a list of product item in each page To parse the dom using jsoup,
 	 *         the div.xxx, div#xxx . is used for class and # is for id. In each
@@ -143,8 +336,7 @@ public class Scraper {
 	 *         good ones, others a sponsored links, which we need to filtered
 	 *         them out.
 	 */
-	public List<ProductItem> getItemsPerPage(Document document) {
-		List<ProductItem> products = new ArrayList<>();
+	public void addItemsPerPageToStore(Document curDocument, List<ProductItem> store) {
 		/*
 		 * In the web browser inspector, we rely on the data-* attribute to find
 		 * out the patterns
@@ -152,27 +344,23 @@ public class Scraper {
 		 * <li id="result_0" data-asin="B01IFVL7VG"
 		 * class="s-result-item celwidget">
 		 */
-		Elements productLists = document.select("li[^data-]");
+		Elements productLists = curDocument.select("li[^data-]");
 
-		//TODO need to shuffle this Elements array, and do not iterate in the normal order
-		//TODO need to make a flag to turn this feature on and off, make a class called ScraperProperty.java and read param from a property file
-		
-		//Turn this on when the flag is possible, and when I finish the bsr implementation
-		//Collections.shuffle(middleColumn);
+		//Shuffle this Elements array, and do not iterate in the normal order
+		if (randomReading) {
+			Collections.shuffle(productLists);
+		}
 		
 		for (int i = 0; i < productLists.size(); i++) {
-			
-			/*Turn this on if the ip is still banned, it will greatly slow down the single thread though.
-			 * Generate a random number between 1-3 secs
-			
-			
-			long rand = (int)(Math.random()*2)+1;
-			try {
-				Thread.sleep(rand);
-			} catch (InterruptedException e) {
-				logger.error(e.getMessage());
+			// Generate a random number between 1-3 secs, switch it in the config file
+			if (randomSleeping) {
+				long rand = (int)(Math.random()*2)+1;
+				try {
+					Thread.sleep(rand);
+				} catch (InterruptedException e) {
+					logger.error(e.getMessage());
+				}
 			}
-			*/
 			
 			//TODO missing URL to explain this if logics
 			Element ele = productLists.get(i);
@@ -190,6 +378,12 @@ public class Scraper {
 				product.setReviewNumber(product.getPageDocument());
 				product.setImageURLs(product.getPageDocument());
 				
+				
+				List<BestSellerRank> bsrList = product.getBsr();
+				if (bsrList.size()>1) {
+					
+				}
+				
 				//the following are for testing
 				System.out.println("Product URL:" + product.getProductURL());
 				System.out.println("ASIN:" + product.getAsin());
@@ -197,11 +391,9 @@ public class Scraper {
 				System.out.println("Rating: " + product.getRating());
 				System.out.println("ReviewNumber: " + product.getReviewNumber());
 				System.out.println("******End of a Product******" + "\n");
-				
-				products.add(product);
+				store.add(product);
 			}
 		}
-		return products;
 	}
 
 	/**
@@ -210,7 +402,7 @@ public class Scraper {
 	 *            <li></li> tag
 	 * @return a string of url
 	 */
-	public String getURL(Element ele) {
+	public String getCurrentPageURL(Element ele) {
 		/*
 		 * I've this HTML code:
 		 * 
@@ -228,7 +420,6 @@ public class Scraper {
 		 * element link = doc.select("td.topic.starter > a"); String url =
 		 * link.attr("href");
 		 */
-
 		Element link = ele.select("a").first();
 		// this link 's ChildNode has all the images I need, could be sperated
 		// with a comma and store in a String type.
@@ -250,7 +441,6 @@ public class Scraper {
 			url = java.net.URLDecoder.decode(link.attr("abs:href"), "UTF-8");
 		} catch (UnsupportedEncodingException e) {
 			logger.error("Error happens in decoding URL of hyperlink object: " + link + " " + e.getMessage());
-
 		}
 		String title = link.text();
 		System.out.println("URL is: " + url);
@@ -258,14 +448,16 @@ public class Scraper {
 		return url;
 	}
 
-
-	public String getNextPage(Element ele) {
-		Element nextPageEles = document.getElementById("centerBelowMinus").getElementsByClass("pagnLink").first()
+	public void setNextPageURL(Element curDocument) {
+		Element nextPageEles = curDocument.getElementById("centerBelowMinus").getElementsByClass("pagnLink").first()
 				.child(0);
-		String nextPageLink = "Amazon.com" + nextPageEles.attr("href");
-		return nextPageLink;
+		this.nextURL = "Amazon.com" + nextPageEles.attr("href");
 	}
 
+	public String getNextPageURL() {
+		return this.nextURL;
+	}
+	
 	// Prevent multithread to start it twice.
 	synchronized public void start() throws Exception {
 		if (Scraper.started) {
@@ -274,23 +466,26 @@ public class Scraper {
 		if ("".equals(this.getEntryURL())) {
 			throw new Exception("No entry URL is set");
 		}
-		scraper.setDocument(this.entryURL);
-		Document document = scraper.getDocument();
-		String researchResultText = scraper.getSearchResultSummaryText(document);
-		int totalCountOfItems = scraper.getTotalCountOfItems(researchResultText);
-		int itemsCountsPerPage = scraper.getItemsCountsPerPage(researchResultText);
+		scraper.setCurrentDocument(this.getEntryURL());
+		Document currentDocument = scraper.getCurrentDocument();
+		scraper.setSearchResultSummaryText(currentDocument);
+		String searchResultSummaryText = scraper.getSearchResultSummaryText();
+		scraper.setItemsCountPerPage(searchResultSummaryText);
+		int itemsCountPerPage = scraper.getItemCountPerPage();
+		scraper.setTotalCountOfItems(searchResultSummaryText);
+		int totalCountOfItems = scraper.getTotalCountOfItems();
+		
 		
 		//TODO the following lines will be commented out once it is done
-		System.out.println("summary text is:" + researchResultText);
+		System.out.println("\nsummary text is:" + searchResultSummaryText);
 		System.out.println(totalCountOfItems);
-		System.out.println(itemsCountsPerPage);
+		System.out.println(itemsCountPerPage);
+		scraper.addItemsPerPageToStore(currentDocument, store);
+		scraper.setNextPageURL(currentDocument);
+		scraper.nextURL = scraper.getNextPageURL();
+		List<ProductItem> totalProducts = scraper.getStore();
 		
-		
-		List<ProductItem> totalProducts = scraper.getItemsPerPage(document);
-		scraper.nextURL = scraper.getNextPage(document);
- 
-		// TODO uncomment these lines, now for debugging, we only
-		// do one page interations.
+		// TODO uncomment these lines, now for debugging, we only do one page interations.
 		/*
 		 * for(int i=1; i<3;
 		 * //Math.ceil(totalCountOfItems/itemsCountsPerPage)-1; i++) {
