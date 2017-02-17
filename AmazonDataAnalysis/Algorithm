@@ -1,0 +1,37 @@
+Faster algorithm to get a best seller of product in certain category
+
+Algorithm1: (faster)
+
+1. get an entry URL of keywords "best selling" + "#mykeyword"
+
+then you will get,
+
+https://www.amazon.com/s/ref=nb_sb_noss?url=search-alias%3Daps&field-keywords=best+selling+bike+computer
+
+ how to construct this by default??? not sure
+ 
+ 2. Now in the page content, we get, 
+ 
+ "Best Sellers in Cycling ComputersSee more"
+ 
+ That "see more" is the hyper link I am interested.
+ 
+
+ 3. When we get "see more" hpyer link, that is the entryURL we
+ used to passed in, we can do further login of that.
+ 
+ 4. But step 2 if we log it, it is done period.
+ 
+ Algorithm 2: 
+ 
+ 1. From an entry product search url, with keyword..etc.
+ 2. We iterate/loop to scrap each product page by page...., pretty brute force, bad for ip ban and robots detect
+ 3. Then in each product detail, we find out if the product happens to have multiple bsr, then
+    this product will have a top 100 best sellers link rwt this product
+ 4. That link is the entry link.
+ 
+ Summary: 
+ 
+ The whole algorithm 2 is doing what the step 1 is doing in algorithm 1.
+ 
+  

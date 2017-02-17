@@ -33,14 +33,12 @@ import org.apache.log4j.Logger;
  *         xlics05@gmail.com
  */
 
-public class Scraper {
+public class Scraper extends Crawler {
 	
 	// Vars used for control the scrapper
 	private final static Scraper scraper = new Scraper();
 	private static Logger logger = Logger.getLogger(Scraper.class);
     private final static boolean started = false;
-	
-    private Document currentDocument;  // Document object from each URL that list a few dozen of products
 	private float filterRatio; // Usually it is 5%, read from config file
 	private boolean randomReading; //Read from config file
 	private boolean randomSleeping; //Read from config file
@@ -50,9 +48,7 @@ public class Scraper {
 	private int totalCountOfItems; //Regex catch
 	private Integer itemCountPerPage; //Regex catch
 	private double totalPagesCount; //Calculated based on above info
-	
-	private String entryURL;      // This is read from config file, nextURL is inferred from this var
-    private String nextURL = null; // Now is calculated from the current document source and it is sequential order
+	private String nextURL = null; // Now is calculated from the current document source and it is sequential order
                                     // literally the next page url.
 	
     private List<ProductItem> store; 
@@ -65,6 +61,7 @@ public class Scraper {
     private File recordFile;  // A file that records product URL that is above the threshold I am interested
     
     private Scraper() {
+    	super();
 		this.store = new ArrayList<>();
 		this.recordFile = new File("record.txt");
 	}
@@ -80,10 +77,6 @@ public class Scraper {
 	public void setEntryURL(String url) {
 		this.entryURL = url;
 	}
-
-	public String getEntryURL() {
-		return this.entryURL;
-	}
 	
 	public void setRandomReading(boolean randomReading) {
 	    this.randomReading = randomReading;
@@ -92,40 +85,14 @@ public class Scraper {
 	public void setRandomSleeping(boolean randomSleeping) {
 		this.randomSleeping = randomSleeping;	
 	}
+	
+	
 
 	public File getRecordFile() {
 		return this.recordFile;
 	}
 	
-	/**
-	 * This is compulsory to run otherwise the Document object will be null.
-	 * 
-	 * Set timeout value so the IOException will be casted.
-	 * 
-	 * TODO need the log4j to hook up so that the exception handling can log
-	 * stuff. rename this method, as setDocument right now is a very bad name
-	 * 
-	 * @return
-	 */
-	public Document setCurrentDocument(String url) {
-		try {
-			currentDocument = Jsoup.connect(url).userAgent(ScraperUtility.CONNECT_ATTR).timeout(10000).get();
-		} catch (IOException e) {
-			logger.error("Error in connecting to url: " + url + " at " + LocalDateTime.now() + e.getMessage()+"\n");
-		}
-		return currentDocument;
-	}
-	
-	/**
-	 * @return Document object which is connected by jsoup
-	 * 
-	 *         Hopefully just connect to the url and set document once, and we
-	 *         can reuse the document object as the connect(url) operation is
-	 *         costly.
-	 */
-	public Document getCurrentDocument() {
-		return currentDocument;
-	}
+
 
 	public void setFilterRatio(float filterRatio) {
 		this.filterRatio = filterRatio;
@@ -137,14 +104,15 @@ public class Scraper {
 	
     //rankThreshold = totalProducts * filterRatio
 	public int setRankThreshold() {
-		// TODO need to rename a lot of the methods and make them from get to set
-		// this.rankThreshold = Math.round(this.filterRatio * this.g**)
-		return 0;
+		int totalItems = this.getTotalCountOfItems();
+		float filterRatio = this.getFilterRatio();
+	  return Math.round(totalItems * filterRatio);
 	}
 	
 	public int getRankThreshold() {
 		return this.rankThreshold;
 	}
+	
 	
 	/*
 	 * TODO what is the better name to replace the Summary? 
@@ -154,128 +122,6 @@ public class Scraper {
 	 */
 	public void setSearchResultSummaryText(Document document) {
 		Element totalCount = document.select("div.s-first-column").first();
-		
-		//TODO check totalCount is null, once it is null it is probably banned
-		/*
-		 * <!doctype html>
-<!--[if lt IE 7]> <html lang="en-us" class="a-no-js a-lt-ie9 a-lt-ie8 a-lt-ie7"> <![endif]-->
-<!--[if IE 7]>    <html lang="en-us" class="a-no-js a-lt-ie9 a-lt-ie8"> <![endif]-->
-<!--[if IE 8]>    <html lang="en-us" class="a-no-js a-lt-ie9"> <![endif]-->
-<!--[if gt IE 8]><!-->
-<html class="a-no-js" lang="en-us">
- <!--<![endif]-->
- <head> 
-  <meta http-equiv="content-type" content="text/html; charset=UTF-8"> 
-  <meta charset="utf-8"> 
-  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"> 
-  <title dir="ltr">Robot Check</title> 
-  <meta name="viewport" content="width=device-width"> 
-  <link rel="stylesheet" href="https://images-na.ssl-images-amazon.com/images/G/01/AUIClients/AmazonUI-3c913031596ca78a3768f4e934b1cc02ce238101.secure.min._V1_.css"> 
-  <script>
-
-if (true === true) {
-    var ue_t0 = (+ new Date()),
-        ue_csm = window,
-        ue = { t0: ue_t0, d: function() { return (+new Date() - ue_t0); } },
-        ue_furl = "fls-na.amazon.com",
-        ue_mid = "ATVPDKIKX0DER",
-        ue_sid = (document.cookie.match(/session-id=([0-9-]+)/) || [])[1],
-        ue_sn = "opfcaptcha.amazon.com",
-        ue_id = '4SRFEPNJ3RYECWE8CVH0';
-}
-</script> 
- </head> 
- <body> 
-  <!--
-        To discuss automated access to Amazon data please contact api-services-support@amazon.com.
-        For information about migrating to our APIs refer to our Marketplace APIs at https://developer.amazonservices.com/ref=rm_c_sv, or our Product Advertising API at https://affiliate-program.amazon.com/gp/advertising/api/detail/main.html/ref=rm_c_ac for advertising use cases.
---> 
-  <!--
-Correios.DoNotSend
---> 
-  <div class="a-container a-padding-double-large" style="min-width:350px;padding:44px 0 !important"> 
-   <div class="a-row a-spacing-double-large" style="width: 350px; margin: 0 auto"> 
-    <div class="a-row a-spacing-medium a-text-center">
-     <i class="a-icon a-logo"></i>
-    </div> 
-    <div class="a-box a-alert a-alert-info a-spacing-base"> 
-     <div class="a-box-inner"> 
-      <i class="a-icon a-icon-alert"></i> 
-      <h4>Enter the characters you see below</h4> 
-      <p class="a-last">Sorry, we just need to make sure you're not a robot. For best results, please make sure your browser is accepting cookies.</p> 
-     </div> 
-    </div> 
-    <div class="a-section"> 
-     <div class="a-box a-color-offset-background"> 
-      <div class="a-box-inner a-padding-extra-large"> 
-       <form method="get" action="/errors/validateCaptcha" name=""> 
-        <input type="hidden" name="amzn" value="LGwZ61ShiGBJTXJD8AGYWw==">
-        <input type="hidden" name="amzn-r" value="/s/ref=nb_sb_noss?url=search-alias%3Daps&amp;field-keywords=daypack">
-        <input type="hidden" name="amzn-pt" value="NoPageType"> 
-        <div class="a-row a-spacing-large"> 
-         <div class="a-box"> 
-          <div class="a-box-inner"> 
-           <h4>Type the characters you see in this image:</h4> 
-           <div class="a-row a-text-center"> 
-            <img src="https://images-na.ssl-images-amazon.com/captcha/cdkxpfei/Captcha_rdmqzvywgt.jpg"> 
-           </div> 
-           <div class="a-row a-spacing-base"> 
-            <div class="a-row"> 
-             <div class="a-column a-span6"> 
-             </div> 
-             <div class="a-column a-span6 a-span-last a-text-right"> 
-              <a onclick="window.location.reload()">Try different image</a> 
-             </div> 
-            </div> 
-            <input autocomplete="off" spellcheck="false" placeholder="Type characters" id="captchacharacters" name="field-keywords" class="a-span12" autocapitalize="off" autocorrect="off" type="text"> 
-           </div> 
-          </div> 
-         </div> 
-        </div> 
-        <div class="a-section a-spacing-extra-large"> 
-         <div class="a-row"> 
-          <span class="a-button a-button-primary a-span12"> <span class="a-button-inner"> <button type="submit" class="a-button-text">Continue shopping</button> </span> </span> 
-         </div> 
-        </div> 
-       </form> 
-      </div> 
-     </div> 
-    </div> 
-   </div> 
-   <div class="a-divider a-divider-section">
-    <div class="a-divider-inner"></div>
-   </div> 
-   <div class="a-text-center a-spacing-small a-size-mini"> 
-    <a href="http://www.amazon.com/gp/help/customer/display.html/ref=footer_cou?ie=UTF8&amp;nodeId=508088">Conditions of Use</a> 
-    <span class="a-letter-space"></span> 
-    <span class="a-letter-space"></span> 
-    <span class="a-letter-space"></span> 
-    <span class="a-letter-space"></span> 
-    <a href="http://www.amazon.com/gp/help/customer/display.html/ref=footer_privacy?ie=UTF8&amp;nodeId=468496">Privacy Policy</a> 
-   </div> 
-   <div class="a-text-center a-size-mini a-color-secondary">
-     © 1996-2014, Amazon.com, Inc. or its affiliates 
-    <script>
-           if (true === true) {
-             document.write('<img src="https://fls-na.amaz'+'on.com/'+'1/oc-csi/1/OP/requestId=4SRFEPNJ3RYECWE8CVH0&js=1" />');
-           };
-          </script> 
-    <noscript> 
-     <img src="https://fls-na.amazon.com/1/oc-csi/1/OP/requestId=4SRFEPNJ3RYECWE8CVH0&amp;js=0"> 
-    </noscript> 
-   </div> 
-  </div> 
-  <script>
-    if (true === true) {
-        var elem = document.createElement("script");
-        elem.src = "https://images-na.ssl-images-amazon.com/images/G/01/csminstrumentation/csm-captcha-instrumentation.min._V" + (+ new Date()) + "_.js";
-        document.getElementsByTagName('head')[0].appendChild(elem);
-    }
-    </script>  
- </body>
-</html>
-		 * 
-		 * */
 		this.searchResultSummaryText = totalCount.text();
 	}
 
@@ -368,15 +214,18 @@ Correios.DoNotSend
 			if (ScraperUtility.isSponsoredProduct(ele)) {
 				continue;
 			} else if (ScraperUtility.isShopByCategory(ele)) {
+				//TODO remove this when not needed
+				System.out.println(product.getProductURL());
 				continue;
 			} else {
 				product.setProductURL(ele);
 				product.setAsin(ele);
-				product.setPageDocument(product.getProductURL());
-				product.setRating(product.getPageDocument());
-				product.setBsr(product.getPageDocument());
-				product.setReviewNumber(product.getPageDocument());
-				product.setImageURLs(product.getPageDocument());
+				product.setDocument(product.getProductURL());
+				Document pageDoc =  product.getDocument();
+				product.setRating(pageDoc);
+				product.setBsr(pageDoc);
+				product.setReviewNumber(pageDoc);
+				product.setImageURLs(pageDoc);
 				
 				
 				List<BestSellerRank> bsrList = product.getBsr();
@@ -466,8 +315,8 @@ Correios.DoNotSend
 		if ("".equals(this.getEntryURL())) {
 			throw new Exception("No entry URL is set");
 		}
-		scraper.setCurrentDocument(this.getEntryURL());
-		Document currentDocument = scraper.getCurrentDocument();
+		scraper.setDocument(this.getEntryURL());
+		Document currentDocument = scraper.getDocument();
 		scraper.setSearchResultSummaryText(currentDocument);
 		String searchResultSummaryText = scraper.getSearchResultSummaryText();
 		scraper.setItemsCountPerPage(searchResultSummaryText);
