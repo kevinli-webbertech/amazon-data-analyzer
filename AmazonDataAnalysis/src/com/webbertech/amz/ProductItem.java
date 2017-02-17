@@ -73,7 +73,7 @@ public class ProductItem {
 	 * @param String, url of page to be connected
 	 * @return
 	 */
-	public void setPageDocument(String url) {
+	public void setDocument(String url) {
 		try {
 			this.pageDocument = Jsoup.connect(url).userAgent(ScraperUtility.CONNECT_ATTR).timeout(10000).get();
 		} catch (IOException e) {
@@ -81,7 +81,7 @@ public class ProductItem {
 		}
 	}
 
-	public Document getPageDocument() {
+	public Document getDocument() {
 		return this.pageDocument;
 	}
 
@@ -223,6 +223,23 @@ public class ProductItem {
 					.valueOf(rankingText.replaceAll(",", ""));*/
 		} else {
 			// TODO Missing URL, need to find out what it is, not sure about the following bsr.
+			/*
+			 * 
+			 * 
+			 * 15:00:27,153 [ main ] [ WARN ]:124 - https://www.amazon.com/Osprey-Packs-Daylite-Backpack-Orange/dp/B019TQPQI6/ref=sr_1_12/166-5521434-9535705?ie=UTF8&qid=1487361610&sr=8-12&keywords=daypack no rating element error
+  15:00:27,154 [ main ] [ ERROR ]:227 - Best seller rank not found. Url is:https://www.amazon.com/Osprey-Packs-Daylite-Backpack-Orange/dp/B019TQPQI6/ref=sr_1_12/166-5521434-9535705?ie=UTF8&qid=1487361610&sr=8-12&keywords=daypack
+  ********SalesRank not find
+find special product
+Exception in thread "main" java.lang.NullPointerException
+	at com.webbertech.amz.ProductItem.setBsr(ProductItem.java:234)
+	at com.webbertech.amz.Scraper.addItemsPerPageToStore(Scraper.java:258)
+	at com.webbertech.amz.Scraper.start(Scraper.java:364)
+	at com.webbertech.amz.ScraperService.startCrawlingService(ScraperService.java:38)
+	at com.webbertech.amz.Main.main(Main.java:6)
+
+			 * 
+			 * */
+			
 			
 			logger.error("Best seller rank not found. Url is:" + this.getProductURL());
 			System.out.println("********SalesRank not find");
